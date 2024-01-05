@@ -1,27 +1,27 @@
 /**************************************************************************
-*   Copyright (C) 2005-2020 by Oleksandr Shneyder                         *
-*                              <o.shneyder@phoca-gmbh.de>                 *
-*                                                                         *
-*   This program is free software; you can redistribute it and/or modify  *
-*   it under the terms of the GNU General Public License as published by  *
-*   the Free Software Foundation; either version 2 of the License, or     *
-*   (at your option) any later version.                                   *
-*   This program is distributed in the hope that it will be useful,       *
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
-*   GNU General Public License for more details.                          *
-*                                                                         *
-*   You should have received a copy of the GNU General Public License     *
-*   along with this program.  If not, see <https://www.gnu.org/licenses/>. *
-***************************************************************************/
+ *   Copyright (C) 2005-2020 by Oleksandr Shneyder                         *
+ *                              <o.shneyder@phoca-gmbh.de>                 *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program.  If not, see <https://www.gnu.org/licenses/>. *
+ ***************************************************************************/
 
 #ifndef CONTEST_H
 #define CONTEST_H
 
 #include <QDialog>
-#include "ui_contest.h"
-#include <QUrl>
 #include <QTcpSocket>
+#include <QUrl>
+#include "ui_contest.h"
 
 class HttpBrokerClient;
 class QTcpSocket;
@@ -31,10 +31,14 @@ class ConTest : public QDialog, public Ui_ConTest
 {
     Q_OBJECT
 public:
-    ConTest(HttpBrokerClient* broker, QUrl url, QWidget* parent = 0, Qt::WindowFlags f = 0);
+    ConTest(HttpBrokerClient *broker,
+            QUrl url,
+            QWidget *parent = 0,
+            Qt::WindowFlags f = Qt::WindowFlags());
     virtual ~ConTest();
+
 private:
-    enum tests {SSH=22,HTTPS=443,SPEED} currentTest;
+    enum tests { SSH = 22, HTTPS = 443, SPEED } currentTest;
     void reset();
     void testConnection(tests test);
     void resetSocket();
@@ -43,11 +47,12 @@ private slots:
     void slotError(QAbstractSocket::SocketError socketError);
     void slotTimer();
     void slotConSpeed(int msecElapsed, int bytesRecived);
+
 private:
-    HttpBrokerClient* broker;
+    HttpBrokerClient *broker;
     QUrl brokerUrl;
-    QTcpSocket* socket;
-    QTimer* timer;
+    QTcpSocket *socket;
+    QTimer *timer;
     int time;
     bool httpsOk;
 public slots:

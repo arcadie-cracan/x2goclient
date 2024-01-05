@@ -1,19 +1,19 @@
 /**************************************************************************
-*   Copyright (C) 2005-2020 by Oleksandr Shneyder                         *
-*                              <o.shneyder@phoca-gmbh.de>                 *
-*                                                                         *
-*   This program is free software; you can redistribute it and/or modify  *
-*   it under the terms of the GNU General Public License as published by  *
-*   the Free Software Foundation; either version 2 of the License, or     *
-*   (at your option) any later version.                                   *
-*   This program is distributed in the hope that it will be useful,       *
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
-*   GNU General Public License for more details.                          *
-*                                                                         *
-*   You should have received a copy of the GNU General Public License     *
-*   along with this program.  If not, see <https://www.gnu.org/licenses/>. *
-***************************************************************************/
+ *   Copyright (C) 2005-2020 by Oleksandr Shneyder                         *
+ *                              <o.shneyder@phoca-gmbh.de>                 *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program.  If not, see <https://www.gnu.org/licenses/>. *
+ ***************************************************************************/
 
 #ifndef CONFIGDIALOG_H
 #define CONFIGDIALOG_H
@@ -33,67 +33,64 @@ class SettingsWidget;
 class MediaWidget;
 class QTabWidget;
 class QGroupBox;
-#if defined (Q_OS_WIN) && defined (CFGCLIENT )
+#if defined(Q_OS_WIN) && defined(CFGCLIENT)
 class XSettingsWidget;
 #endif
 /**
-	@author Oleksandr Shneyder <oleksandr.shneyder@obviously-nice.de>
+        @author Oleksandr Shneyder <oleksandr.shneyder@obviously-nice.de>
 */
 class ConfigDialog : public QDialog
 {
     Q_OBJECT
 public:
-    ConfigDialog ( QWidget * parent,
-                   Qt::WindowFlags f = 0 );
+    ConfigDialog(QWidget *parent, Qt::WindowFlags f = Qt::WindowFlags());
     ~ConfigDialog();
 #ifdef Q_OS_DARWIN
-    static    QString findXDarwin ( QString& version,
-                                    QString path="" );
-    static    QString retMaxXDarwinVersion ( QString v1,
-            QString v2 );
-    static    QString getXDarwinDirectory();
-    void    printXDarwinVersionWarning ( QString version );
+    static QString findXDarwin(QString &version, QString path = "");
+    static QString retMaxXDarwinVersion(QString v1, QString v2);
+    static QString getXDarwinDirectory();
+    void printXDarwinVersionWarning(QString version);
 #endif
 #ifdef Q_OS_WIN
-    static    QString getCygwinDir ( const QString& dir );
+    static QString getCygwinDir(const QString &dir);
 #endif
 
 private:
-    QTabWidget* tabWidg;
-    QCheckBox* cbStartEmbed;
-    QLineEdit* ldapBase;
-    QLineEdit* ldapServer;
-    QSpinBox*  port;
-    QLineEdit* ldapServer1;
-    QSpinBox*  port1;
-    PrintWidget* pwid;
-    QLineEdit* ldapServer2;
+    QTabWidget *tabWidg;
+    QCheckBox *cbStartEmbed;
+    QLineEdit *ldapBase;
+    QLineEdit *ldapServer;
+    QSpinBox *port;
+    QLineEdit *ldapServer1;
+    QSpinBox *port1;
+    PrintWidget *pwid;
+    QLineEdit *ldapServer2;
     bool embedMode;
-    QSpinBox*  port2;
-    QSpinBox*  clientSshPort;
-    QPushButton* ok;
+    QSpinBox *port2;
+    QSpinBox *clientSshPort;
+    QPushButton *ok;
     bool advOptionsShown;
-    QGroupBox* gbLDAP;
+    QGroupBox *gbLDAP;
 
-    QPushButton* defaults;
-    QPushButton* advancedOptions;
+    QPushButton *defaults;
+    QPushButton *advancedOptions;
 
-    QLineEdit* leXexec;
-    QLineEdit* leCmdOpt;
-    QSpinBox* sbDisp;
-    QLineEdit* leXexecDir;
-    QRadioButton* rbX[3];
-    QPushButton* pbOpenExec;
-    QButtonGroup* bgRadio;
-    ConnectionWidget* conWidg;
-    SettingsWidget* setWidg;
-    MediaWidget* mediaWidget;
+    QLineEdit *leXexec;
+    QLineEdit *leCmdOpt;
+    QSpinBox *sbDisp;
+    QLineEdit *leXexecDir;
+    QRadioButton *rbX[3];
+    QPushButton *pbOpenExec;
+    QButtonGroup *bgRadio;
+    ConnectionWidget *conWidg;
+    SettingsWidget *setWidg;
+    MediaWidget *mediaWidget;
 
-#if defined (Q_OS_WIN) && defined (CFGCLIENT)
-    XSettingsWidget* xsetWidg;
+#if defined(Q_OS_WIN) && defined(CFGCLIENT)
+    XSettingsWidget *xsetWidg;
 #endif
 
-#if defined (Q_OS_WIN) || defined (Q_OS_DARWIN)
+#if defined(Q_OS_WIN) || defined(Q_OS_DARWIN)
     QCheckBox *cbNoRecord;
     QCheckBox *cbDisablePA;
     bool systemDisablePA;
@@ -106,7 +103,6 @@ private:
     QCheckBox *cbNoClose;
     QCheckBox *cbMinToTray;
 
-
 public slots:
     void slot_accepted();
     void slot_checkOkStat();
@@ -115,7 +111,7 @@ private slots:
     void slot_selectXDarwin();
     void slot_findXDarwin();
 #endif
-#if defined (Q_OS_WIN) || defined (Q_OS_DARWIN)
+#if defined(Q_OS_WIN) || defined(Q_OS_DARWIN)
     void slot_cbDisablePAStateChanged(int state);
 #endif /* defined (Q_OS_WIN) || defined (Q_OS_DARWIN) */
 

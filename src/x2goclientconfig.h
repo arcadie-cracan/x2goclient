@@ -18,10 +18,9 @@
 #if !defined(_X2GOCLIENT_CONFIG_H_)
 #define _X2GOCLIENT_CONFIG_H_
 
-#include <stdio.h>
 #include <qconfig.h>
 #include <qglobal.h>
-
+#include <stdio.h>
 
 //#define LOGFILE QDir::homePath()+"/x2goclient.log"
 

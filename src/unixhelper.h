@@ -17,17 +17,16 @@
  *  59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.              *
  ***************************************************************************/
 
-
 #ifndef UNIXHELPER_H
 #define UNIXHELPER_H
 
-#include <QtCore/qglobal.h>
-#include <unistd.h>
+#include <qglobal.h>
 
 #ifdef Q_OS_UNIX
+#include <unistd.h>
 
 namespace unixhelper {
-  /*
+/*
    * Unblocks all signals and installs a signal handler for SIGHUP,
    * which calls kill_pgroup ().
    *
@@ -44,9 +43,9 @@ namespace unixhelper {
    * the original value passed via parameter parent.
    * Should they mismatch, the parent died and kill_pgroup () is called.
    */
-  int unix_cleanup (const pid_t parent);
+int unix_cleanup(const pid_t parent);
 
-  /*
+/*
    * Wrapper for killing a whole process group.
    * The "real" killing work is done by real_kill_pgroup ().
    * This function tries to fork off another process and change
@@ -62,9 +61,9 @@ namespace unixhelper {
    *               so a polling solution is needed, see unix_cleanup().)
    * Other values are not handled.
    */
-  void kill_pgroup (const int signal);
+void kill_pgroup(const int signal);
 
-  /*
+/*
    * Kills the whole process group.
    * First, SIGTERM is sent to the group.
    * A 10 seconds grace period is granted to make sure
@@ -74,8 +73,8 @@ namespace unixhelper {
    *
    * pgid is the process group ID to be killed.
    */
-  void real_kill_pgroup (const pid_t pgid);
-}
+void real_kill_pgroup(const pid_t pgid);
+} // namespace unixhelper
 
 #endif /* defined (Q_OS_UNIX) */
 

@@ -18,7 +18,7 @@
 #ifndef SHAREWIDGET_H
 #define SHAREWIDGET_H
 
-#include <configwidget.h>
+#include "configwidget.h"
 
 /**
 	@author Oleksandr Shneyder <oleksandr.shneyder@obviously-nice.de>
@@ -31,33 +31,35 @@ class QComboBox;
 
 class ShareWidget : public ConfigWidget
 {
-		Q_OBJECT
-	public:
-		ShareWidget ( QString id, ONMainWindow * mw,
-		              QWidget * parent=0, Qt::WindowFlags f=0 );
-		~ShareWidget();
-		void setDefaults();
-		void saveSettings();
-	private slots:
-		void slot_openDir();
-		void slot_addDir();
-		void slot_delDir();
-		void slot_convClicked();
-	private:
-		QTreeView* expTv;
-		QStandardItemModel* model;
-		QLabel *ldir;
-		QCheckBox* cbFsSshTun;
-		QCheckBox* cbFsConv;
-		QComboBox* cbFrom;
-		QComboBox* cbTo;
-		QLabel* lFrom;
-		QLabel* lTo;
+    Q_OBJECT
+public:
+    ShareWidget(QString id,
+                ONMainWindow* mw,
+                QWidget* parent = 0,
+                Qt::WindowFlags f = Qt::WindowFlags());
+    ~ShareWidget();
+    void setDefaults();
+    void saveSettings();
+private slots:
+    void slot_openDir();
+    void slot_addDir();
+    void slot_delDir();
+    void slot_convClicked();
 
-	private:
-		void readConfig();
-		void loadEnc ( QComboBox* cb );
+private:
+    QTreeView* expTv;
+    QStandardItemModel* model;
+    QLabel* ldir;
+    QCheckBox* cbFsSshTun;
+    QCheckBox* cbFsConv;
+    QComboBox* cbFrom;
+    QComboBox* cbTo;
+    QLabel* lFrom;
+    QLabel* lTo;
 
+private:
+    void readConfig();
+    void loadEnc(QComboBox* cb);
 };
 
 #endif

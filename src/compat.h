@@ -29,10 +29,10 @@
  */
 #if MAC_OS_X_VERSION_MIN_REQUIRED < 1070
 #include <stddef.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
-char *strndup (const char *s, size_t n);
+char *strndup(const char *s, size_t n);
 #endif /* MAC_OS_X_VERSION_MIN_REQUIRED */
 #endif /* defined (Q_OS_DARWIN) */
 

@@ -18,8 +18,8 @@
 #ifndef USERBUTTON_H
 #define USERBUTTON_H
 
-#include "x2goclientconfig.h"
 #include <QPushButton>
+#include "x2goclientconfig.h"
 
 /**
 @author Oleksandr Shneyder
@@ -29,26 +29,30 @@ class QPixmap;
 class ONMainWindow;
 class UserButton : public QPushButton
 {
-		Q_OBJECT
-	public:
-		UserButton ( ONMainWindow* wnd, QWidget *parent,
-		             QString username, QString fullName,
-		             QPixmap& foto, QPalette& backGround,
-		             int width=0,int height=0 );
-		~UserButton();
-		QString username() {return user;}
-		QString fullName() {return fname;}
-		const QPixmap& foto() {return image;}
-		const QPixmap& background() {return bg;}
+    Q_OBJECT
+public:
+    UserButton(ONMainWindow* wnd,
+               QWidget* parent,
+               QString username,
+               QString fullName,
+               QPixmap& foto,
+               QPalette& backGround,
+               int width = 0,
+               int height = 0);
+    ~UserButton();
+    QString username() { return user; }
+    QString fullName() { return fname; }
+    const QPixmap& foto() { return image; }
+    const QPixmap& background() { return bg; }
 
-	private:
-		QString user;
-		QString fname;
-		QPixmap image;
-		QPixmap bg;
-	private slots:
-		void slotClicked();
-	signals:
-		void userSelected ( UserButton* );
+private:
+    QString user;
+    QString fname;
+    QPixmap image;
+    QPixmap bg;
+private slots:
+    void slotClicked();
+signals:
+    void userSelected(UserButton*);
 };
 #endif

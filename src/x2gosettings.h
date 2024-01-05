@@ -27,20 +27,16 @@ class QTemporaryFile;
 class X2goSettings
 {
 public:
-    X2goSettings ( QString group );
-    X2goSettings ( QString fileContent, QSettings::Format format);
+    X2goSettings(QString group);
+    X2goSettings(QString fileContent, QSettings::Format format);
     ~X2goSettings();
 
     static bool centralSettings();
-    QSettings* setting()
-    {
-        return set;
-    }
+    QSettings* setting() { return set; }
 
 private:
     QSettings* set;
     QTemporaryFile* cfgFile;
-
 };
 
 #endif

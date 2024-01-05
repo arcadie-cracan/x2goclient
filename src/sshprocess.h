@@ -18,9 +18,11 @@
 #ifndef SSHPROCESS_H
 #define SSHPROCESS_H
 
-#include <libssh/libssh.h>
+#include <qglobal.h>
+
 #include <QObject>
 #include <QProcess>
+#include <libssh/libssh.h>
 #ifndef Q_OS_WIN
 #include <netinet/in.h>
 #endif
@@ -31,24 +33,24 @@ class SshProcess : public QObject
 {
     Q_OBJECT
     friend class SshMasterConnection;
-private:
 
+private:
     SshProcess(SshMasterConnection* master, int pid);
     ~SshProcess();
 
     void startNormal(const QString& cmd, bool overridePath);
-    void startTunnel(const QString& forwardHost, uint forwardPort, const QString& localHost,
-                     uint localPort, bool reverse=false);
+    void startTunnel(const QString& forwardHost,
+                     uint forwardPort,
+                     const QString& localHost,
+                     uint localPort,
+                     bool reverse = false);
     void start_cp(QString src, QString dst);
-    QString getSource()
-    {
-        return scpSource;
-    }
+    QString getSource() { return scpSource; }
 
     void tunnelLoop();
 #ifdef Q_OS_WIN
-    void    addPuttyReg(QString host, QString uuidStr);
-    void    rmPuttyReg(QString uuidStr);
+    void addPuttyReg(QString host, QString uuidStr);
+    void rmPuttyReg(QString uuidStr);
 #endif
 
 private:
@@ -63,7 +65,7 @@ private:
     quint16 localPort;
     uint serverSocket;
     struct sockaddr_in address;
-#ifndef  Q_OS_WIN
+#ifndef Q_OS_WIN
     socklen_t addrlen;
 #else
     int addrlen;
@@ -73,7 +75,7 @@ private:
     QString abortString;
     bool tunnel;
     bool normalExited;
-//only to use with krb (until no GSSAPI support in libssh)
+    //only to use with krb (until no GSSAPI support in libssh)
     QProcess* proc;
     QString procUuid;
     bool execProcess;
@@ -83,18 +85,18 @@ private slots:
     void slotCheckNewConnection();
     void slotStdErr(SshProcess* creator, QByteArray data);
     void slotStdOut(SshProcess* creator, QByteArray data);
-    void slotIOerr(SshProcess* creator,QString message, QString sshSessionErr);
+    void slotIOerr(SshProcess* creator, QString message, QString sshSessionErr);
     void slotChannelClosed(SshProcess* creator, QString uuid);
     void slotReverseTunnelOk(SshProcess* creator);
     void slotReverseTunnelFailed(SshProcess* creator, QString error);
     void slotCopyOk(SshProcess* creator);
-    void slotCopyErr(SshProcess* creator,QString message, QString sshSessionErr);
+    void slotCopyErr(SshProcess* creator, QString message, QString sshSessionErr);
     //krb stuff
-    void slotSshProcFinished( int exitCode, QProcess::ExitStatus exitStatus);
+    void slotSshProcFinished(int exitCode, QProcess::ExitStatus exitStatus);
     void slotSshProcStdErr();
     void slotSshProcStdOut();
 signals:
-    void sshFinished ( bool result, QString output, int processId);
+    void sshFinished(bool result, QString output, int processId);
     void sshTunnelOk(int processId);
 };
 

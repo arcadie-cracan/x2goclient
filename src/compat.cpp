@@ -17,7 +17,7 @@
  *  59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.              *
  ***************************************************************************/
 
-#include "compat.h"
+#include <qglobal.h>
 
 #ifdef Q_OS_DARWIN
 /*
@@ -26,24 +26,25 @@
  */
 #if MAC_OS_X_VERSION_MIN_REQUIRED < 1070
 #include <stddef.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
-char *strndup (const char *s, size_t n) {
-  char *result;
-  size_t len = strlen (s);
+char *strndup(const char *s, size_t n)
+{
+    char *result;
+    size_t len = strlen(s);
 
-  if (n < len) {
-    len = n;
-  }
+    if (n < len) {
+        len = n;
+    }
 
-  result = (char *) malloc (len + 1);
-  if (!result) {
-    return (0);
-  }
+    result = (char *) malloc(len + 1);
+    if (!result) {
+        return (0);
+    }
 
-  result[len] = '\0';
-  return ((char *) memcpy (result, s, len));
+    result[len] = '\0';
+    return ((char *) memcpy(result, s, len));
 }
 #endif /* MAC_OS_X_VERSION_MIN_REQUIRED */
 #endif /* defined (Q_OS_DARWIN) */

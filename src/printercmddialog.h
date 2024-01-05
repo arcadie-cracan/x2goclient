@@ -25,20 +25,20 @@
 */
 class PrinterCmdDialog : public QDialog
 {
-		Q_OBJECT
-	public:
-		PrinterCmdDialog ( QString* cmd, bool* stdinpr,
-		                   bool* ps, QWidget* parent=0l );
+    Q_OBJECT
+public:
+    PrinterCmdDialog(QString* cmd, bool* stdinpr, bool* ps, QWidget* parent = 0l);
 
-		~PrinterCmdDialog();
-	private:
-		Ui::PrinterCmdDialog ui;
-		bool* printStdIn;
-		bool* printPs;
-		QString* printCmd;
+    ~PrinterCmdDialog();
 
-	private slots:
-		void slot_ok();
+private:
+    Ui::PrinterCmdDialog ui;
+    bool* printStdIn;
+    bool* printPs;
+    QString* printCmd;
+
+private slots:
+    void slot_ok();
 };
 
 #endif

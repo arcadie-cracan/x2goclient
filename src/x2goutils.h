@@ -19,38 +19,48 @@
 #ifndef X2GOUTILS_H
 #define X2GOUTILS_H
 
-#include <QString>
 #include <QFont>
 #include <QMessageBox>
+#include <QString>
 
 #ifndef UNUSED
-#define UNUSED(x) do { (void) x; } while (0)
+#define UNUSED(x) \
+    do { \
+        (void) x; \
+    } while (0)
 #endif
 
 #ifndef MACPORTS_PREFIX
 #define MACPORTS_PREFIX "/opt/local"
 #endif
 
-QString expandHome (QString path);
+QString expandHome(QString path);
 
-QString fixup_resource_URIs (const QString &res_path);
+QString fixup_resource_URIs(const QString &res_path);
 
-QString wrap_legacy_resource_URIs (const QString &res_path);
+QString wrap_legacy_resource_URIs(const QString &res_path);
 
-QString convert_to_rich_text (const QString &text, bool force = false);
+QString convert_to_rich_text(const QString &text, bool force = false);
 
-void show_RichText_Generic_MsgBox (QMessageBox::Icon icon, const QString &main_text, const QString &informative_text, bool app_modal = false);
-void show_RichText_WarningMsgBox (const QString &main_text, const QString &informative_text = "", bool app_modal = false);
-void show_RichText_ErrorMsgBox (const QString &main_text, const QString &informative_text = "", bool app_modal = false);
+void show_RichText_Generic_MsgBox(QMessageBox::Icon icon,
+                                  const QString &main_text,
+                                  const QString &informative_text,
+                                  bool app_modal = false);
+void show_RichText_WarningMsgBox(const QString &main_text,
+                                 const QString &informative_text = "",
+                                 bool app_modal = false);
+void show_RichText_ErrorMsgBox(const QString &main_text,
+                               const QString &informative_text = "",
+                               bool app_modal = false);
 
-QString git_changelog_extract_commit_sha (const QString &gitlog);
+QString git_changelog_extract_commit_sha(const QString &gitlog);
 
-bool font_is_monospaced (const QFont &font);
+bool font_is_monospaced(const QFont &font);
 
 #ifdef Q_OS_DARWIN
-void show_XQuartz_not_found_error ();
-void show_XQuartz_start_error ();
-void show_XQuartz_generic_error (const QString &main_error, const QString &additional_info);
+void show_XQuartz_not_found_error();
+void show_XQuartz_start_error();
+void show_XQuartz_generic_error(const QString &main_error, const QString &additional_info);
 #endif /* defined (Q_OS_DARWIN) */
 
 #ifdef Q_OS_UNIX
@@ -64,7 +74,7 @@ void show_XQuartz_generic_error (const QString &main_error, const QString &addit
  * Otherwise, each entry is prepended to the original PATH value, if not already existing.
  * Ex.: <add_entry1>:<add_entry2>:...:<orig_path>
  */
-QString add_to_path (const QString &orig_path, const QStringList &add, const bool back = true);
+QString add_to_path(const QString &orig_path, const QStringList &add, const bool back = true);
 
 /*
  * Returns the first existing path that contains binary_name.
@@ -72,7 +82,7 @@ QString add_to_path (const QString &orig_path, const QStringList &add, const boo
  *
  * Iff path is empty, (only) the current working dir is searched.
  */
-QString find_binary (const QString &path, const QString &binary_name);
+QString find_binary(const QString &path, const QString &binary_name);
 #endif /* defined (Q_OS_UNIX) */
 
 #endif /* !defined (X2GOUTILS_H) */

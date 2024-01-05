@@ -18,20 +18,30 @@
 #ifndef SSHMASTERCONNECTION_H
 #define SSHMASTERCONNECTION_H
 
-#include <libssh/libssh.h>
-#include <QString>
+#include <qglobal.h>
+
 #include <QList>
 #include <QMutex>
-#include <QThread>
+#include <QNetworkProxy>
+#include <QString>
 #include <QStringList>
 #include <QTcpSocket>
-#include <QNetworkProxy>
+#include <QThread>
+#include <libssh/libssh.h>
 
-
-#define PROPERTY(TYPE,NAME)  private: TYPE NAME; \
-public: TYPE get_##NAME(){return NAME;} \
-void set_##NAME(TYPE VAL){NAME=VAL;}
-
+#define PROPERTY(TYPE, NAME) \
+private: \
+    TYPE NAME; \
+\
+public: \
+    TYPE get_##NAME() \
+    { \
+        return NAME; \
+    } \
+    void set_##NAME(TYPE VAL) \
+    { \
+        NAME = VAL; \
+    }
 
 class ONMainWindow;
 class SshProcess;
@@ -46,10 +56,7 @@ struct ChannelConnection
     QString localHost;
     QString command;
     QString uuid;
-    bool operator==(ChannelConnection& t)
-    {
-        return (channel==t.channel);
-    }
+    bool operator==(ChannelConnection& t) { return (channel == t.channel); }
 };
 
 struct ReverseTunnelRequest
@@ -68,12 +75,12 @@ struct CopyRequest
     QString dst;
 };
 
-class SshMasterConnection: public QThread
+class SshMasterConnection : public QThread
 {
     Q_OBJECT
     PROPERTY(bool, kerberosDelegation)
 public:
-    enum ProxyType {PROXYSSH, PROXYHTTP};
+    enum ProxyType { PROXYSSH, PROXYHTTP };
 
     enum passphrase_types {
         PASSPHRASE_PRIVKEY,
@@ -83,45 +90,60 @@ public:
     };
 
     void run();
-    SshMasterConnection(QObject* parent, QString host, int port, bool acceptUnknownServers, QString user,
-                        QString pass, QString key, bool autologin, bool krblogin=false,
-                        bool useproxy=false, ProxyType type=PROXYSSH, QString proxyserver=QString::null, quint16 proxyport=0,
-                        QString proxylogin=QString::null, QString proxypassword=QString::null, QString proxyKey=QString::null,
-                        bool proxyAutologin=false, bool proxyKrbLogin=false);
+    SshMasterConnection(QObject* parent,
+                        QString host,
+                        int port,
+                        bool acceptUnknownServers,
+                        QString user,
+                        QString pass,
+                        QString key,
+                        bool autologin,
+                        bool krblogin = false,
+                        bool useproxy = false,
+                        ProxyType type = PROXYSSH,
+                        QString proxyserver = QString(),
+                        quint16 proxyport = 0,
+                        QString proxylogin = QString(),
+                        QString proxypassword = QString(),
+                        QString proxyKey = QString(),
+                        bool proxyAutologin = false,
+                        bool proxyKrbLogin = false);
     ~SshMasterConnection();
-    void addChannelConnection(SshProcess* creator, int sock, QString forwardHost,
-                              int forwardPort, QString localHost, int localPort, void* channel=0l);
+    void addChannelConnection(SshProcess* creator,
+                              int sock,
+                              QString forwardHost,
+                              int forwardPort,
+                              QString localHost,
+                              int localPort,
+                              void* channel = 0l);
     void addChannelConnection(SshProcess* creator, QString uuid, QString cmd);
     void addCopyRequest(SshProcess* creator, QString src, QString dst);
     void writeKnownHosts(bool);
     void setKeyPhrase(QString);
 
-    int executeCommand(const QString& command, QObject* receiver=0, const char* slotFinished=0, bool overridePath=true);
-    int startTunnel(const QString& forwardHost, uint forwardPort, const QString& localHost,
-                    uint localPort, bool reverse=false, QObject* receiver=0, const char* slotTunnelOk=0, const char* slotFinished=0);
-    int copyFile(const QString& src, const QString dst, QObject* receiver=0, const char* slotFinished=0);
+    int executeCommand(const QString& command,
+                       QObject* receiver = 0,
+                       const char* slotFinished = 0,
+                       bool overridePath = true);
+    int startTunnel(const QString& forwardHost,
+                    uint forwardPort,
+                    const QString& localHost,
+                    uint localPort,
+                    bool reverse = false,
+                    QObject* receiver = 0,
+                    const char* slotTunnelOk = 0,
+                    const char* slotFinished = 0);
+    int copyFile(const QString& src,
+                 const QString dst,
+                 QObject* receiver = 0,
+                 const char* slotFinished = 0);
     QString getSourceFile(int pid);
 
-    void setAcceptUnknownServers(bool accept)
-    {
-        acceptUnknownServers=accept;
-    }
-    QString getHost()
-    {
-        return host;
-    }
-    QString getUser()
-    {
-        return user;
-    }
-    int getPort()
-    {
-        return port;
-    }
-    bool useKerberos()
-    {
-        return kerberos;
-    };
+    void setAcceptUnknownServers(bool accept) { acceptUnknownServers = accept; }
+    QString getHost() { return host; }
+    QString getUser() { return user; }
+    int getPort() { return port; }
+    bool useKerberos() { return kerberos; };
 
 private:
     bool sshConnect();
@@ -134,7 +156,7 @@ private:
     bool userAuthKrb();
     bool userAuthKeyboardInteractive(QString prompt);
     void channelLoop();
-    bool createChannelConnection (int i, int &maxsock, fd_set &rfds, ssh_channel *read_chan);
+    bool createChannelConnection(int i, int& maxsock, fd_set& rfds, ssh_channel* read_chan);
     void finalize(int arg1);
     void copy();
     int serverAuth(QString& errorMsg);
@@ -147,19 +169,17 @@ private:
 
 private slots:
 
-    void slotSshProxyServerAuthError ( int,QString, SshMasterConnection* );
-    void slotSshProxyServerAuthAborted ();
-    void slotSshProxyUserAuthError ( QString );
-    void slotSshProxyConnectionError ( QString,QString );
-
+    void slotSshProxyServerAuthError(int, QString, SshMasterConnection*);
+    void slotSshProxyServerAuthAborted();
+    void slotSshProxyUserAuthError(QString);
+    void slotSshProxyConnectionError(QString, QString);
 
     void slotSshProxyConnectionOk();
     void slotSshProxyTunnelOk(int);
-    void slotSshProxyTunnelFailed(bool result,  QString output,
-                                  int);
-    void slotSshProxyInteractionStart ( SshMasterConnection* connection, QString prompt );
-    void slotSshProxyInteractionUpdate ( SshMasterConnection* connection, QString output );
-    void slotSshProxyInteractionFinish ( SshMasterConnection* connection);
+    void slotSshProxyTunnelFailed(bool result, QString output, int);
+    void slotSshProxyInteractionStart(SshMasterConnection* connection, QString prompt);
+    void slotSshProxyInteractionUpdate(SshMasterConnection* connection, QString output);
+    void slotSshProxyInteractionFinish(SshMasterConnection* connection);
 
 public slots:
     void interactionTextEnter(QString text);
@@ -209,8 +229,8 @@ private:
     ONMainWindow* mainWnd;
     bool kerberos;
     QString sshProcErrString;
-    QTcpSocket *tcpProxySocket;
-    QNetworkProxy *tcpNetworkProxy;
+    QTcpSocket* tcpProxySocket;
+    QNetworkProxy* tcpNetworkProxy;
     SshMasterConnection* sshProxy;
     bool sshProxyReady;
     bool breakLoop;
@@ -236,7 +256,7 @@ signals:
     void serverAuthAborted();
     void userAuthError(QString error);
 
-    void connectionOk( QString host);
+    void connectionOk(QString host);
 
     void needPassPhrase(SshMasterConnection*, SshMasterConnection::passphrase_types);
     void needChallengeResponse(SshMasterConnection*, QString Challenge);
@@ -245,7 +265,6 @@ signals:
     void updateInteraction(SshMasterConnection*, QString output);
 };
 
-Q_DECLARE_METATYPE (SshMasterConnection::passphrase_types)
+Q_DECLARE_METATYPE(SshMasterConnection::passphrase_types)
 
 #endif // SSHMASTERCONNECTION_H
-

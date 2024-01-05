@@ -1,195 +1,188 @@
 /**************************************************************************
-*   Copyright (C) 2005-2020 by Oleksandr Shneyder                         *
-*                              <o.shneyder@phoca-gmbh.de>                 *
-*                                                                         *
-*   This program is free software; you can redistribute it and/or modify  *
-*   it under the terms of the GNU General Public License as published by  *
-*   the Free Software Foundation; either version 2 of the License, or     *
-*   (at your option) any later version.                                   *
-*   This program is distributed in the hope that it will be useful,       *
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
-*   GNU General Public License for more details.                          *
-*                                                                         *
-*   You should have received a copy of the GNU General Public License     *
-*   along with this program.  If not, see <https://www.gnu.org/licenses/>. *
-***************************************************************************/
+ *   Copyright (C) 2005-2020 by Oleksandr Shneyder                         *
+ *                              <o.shneyder@phoca-gmbh.de>                 *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program.  If not, see <https://www.gnu.org/licenses/>. *
+ ***************************************************************************/
 
-#include "x2goclientconfig.h"
 #include "sessionmanagedialog.h"
 #include "onmainwindow.h"
+#include "x2goclientconfig.h"
 #include "x2gologdebug.h"
 
-#include <QPushButton>
+#include <QBoxLayout>
 #include <QDir>
 #include <QFrame>
-#include <QBoxLayout>
-#include <QTreeWidget>
-#include <QStringListModel>
+#include <QPushButton>
 #include <QShortcut>
-#include "sessionbutton.h"
+#include <QStringListModel>
+#include <QTreeWidget>
 #include "folderbutton.h"
+#include "sessionbutton.h"
 #include "sessionexplorer.h"
 
-#define SESSIONROLE Qt::UserRole+1
-#define SESSIONIDROLE Qt::UserRole+2
+#define SESSIONROLE Qt::UserRole + 1
+#define SESSIONIDROLE Qt::UserRole + 2
 
-SessionManageDialog::SessionManageDialog ( QWidget * parent,
-        bool onlyCreateIcon, Qt::WindowFlags f )
-    : QDialog ( parent, f )
+SessionManageDialog::SessionManageDialog(QWidget *parent, bool onlyCreateIcon, Qt::WindowFlags f)
+    : QDialog(parent, f)
 {
-    QVBoxLayout* ml=new QVBoxLayout ( this );
-    QFrame *fr=new QFrame ( this );
-    QHBoxLayout* frLay=new QHBoxLayout ( fr );
+    QVBoxLayout *ml = new QVBoxLayout(this);
+    QFrame *fr = new QFrame(this);
+    QHBoxLayout *frLay = new QHBoxLayout(fr);
 
-    currentPath="";
+    currentPath = "";
 
-    QPushButton* ok=new QPushButton ( tr ( "E&xit" ),this );
-    QHBoxLayout* bLay=new QHBoxLayout();
+    QPushButton *ok = new QPushButton(tr("E&xit"), this);
+    QHBoxLayout *bLay = new QHBoxLayout();
 
-    sessions=new QTreeWidget ( fr );
-    frLay->addWidget ( sessions );
+    sessions = new QTreeWidget(fr);
+    frLay->addWidget(sessions);
 
-    QPushButton* newSession=new QPushButton ( tr ( "&New session" ),fr );
-    editSession=new QPushButton ( tr ( "&Session preferences" ),fr );
-    removeSession=new QPushButton ( tr ( "&Delete session" ),fr );
+    QPushButton *newSession = new QPushButton(tr("&New session"), fr);
+    editSession = new QPushButton(tr("&Session preferences"), fr);
+    removeSession = new QPushButton(tr("&Delete session"), fr);
 #if (!defined Q_WS_HILDON) && (!defined Q_OS_DARWIN)
-    if ( !ONMainWindow::getPortable() )
-        createSessionIcon=new QPushButton (
-            tr ( "&Create session icon on desktop ..." ),fr );
+    if (!ONMainWindow::getPortable())
+        createSessionIcon = new QPushButton(tr("&Create session icon on desktop ..."), fr);
 #endif
-    par= ( ONMainWindow* ) parent;
-    newSession->setIcon ( QIcon (
-                              par->iconsPath ( "/16x16/new_file.png" ) ) );
-    editSession->setIcon ( QIcon (
-                               par->iconsPath ( "/16x16/edit.png" ) ) );
+    par = (ONMainWindow *) parent;
+    newSession->setIcon(QIcon(par->iconsPath("/16x16/new_file.png")));
+    editSession->setIcon(QIcon(par->iconsPath("/16x16/edit.png")));
 #if (!defined Q_WS_HILDON) && (!defined Q_OS_DARWIN)
-    if ( !ONMainWindow::getPortable() )
-        createSessionIcon->setIcon (
-            QIcon ( par->iconsPath ( "/16x16/create_file.png" ) ) );
+    if (!ONMainWindow::getPortable())
+        createSessionIcon->setIcon(QIcon(par->iconsPath("/16x16/create_file.png")));
 #endif
-    removeSession->setIcon (
-        QIcon ( par->iconsPath ( "/16x16/delete.png" ) ) );
+    removeSession->setIcon(QIcon(par->iconsPath("/16x16/delete.png")));
 
-    QVBoxLayout* actLay=new QVBoxLayout();
-    actLay->addWidget ( newSession );
-    actLay->addWidget ( editSession );
-    actLay->addWidget ( removeSession );
+    QVBoxLayout *actLay = new QVBoxLayout();
+    actLay->addWidget(newSession);
+    actLay->addWidget(editSession);
+    actLay->addWidget(removeSession);
 #if (!defined Q_WS_HILDON) && (!defined Q_OS_DARWIN)
-    if ( !ONMainWindow::getPortable() )
-        actLay->addWidget ( createSessionIcon );
+    if (!ONMainWindow::getPortable())
+        actLay->addWidget(createSessionIcon);
 #endif
     actLay->addStretch();
-    frLay->addLayout ( actLay );
+    frLay->addLayout(actLay);
 
-    if ( onlyCreateIcon )
-    {
+    if (onlyCreateIcon) {
         newSession->hide();
         editSession->hide();
         removeSession->hide();
     }
 
-    QShortcut* sc=new QShortcut (
-        QKeySequence ( tr ( "Delete","Delete" ) ),this );
-    connect ( ok,SIGNAL ( clicked() ),this,SLOT ( close() ) );
-    connect (
-        sc,SIGNAL ( activated() ),removeSession,SIGNAL ( clicked() ) );
-    connect (
-        removeSession,SIGNAL ( clicked() ),this,SLOT ( slot_delete() ) );
-    connect ( editSession,SIGNAL ( clicked() ),this,SLOT ( slot_edit() ) );
+    QShortcut *sc = new QShortcut(QKeySequence(tr("Delete", "Delete")), this);
+    connect(ok, SIGNAL(clicked()), this, SLOT(close()));
+    connect(sc, SIGNAL(activated()), removeSession, SIGNAL(clicked()));
+    connect(removeSession, SIGNAL(clicked()), this, SLOT(slot_delete()));
+    connect(editSession, SIGNAL(clicked()), this, SLOT(slot_edit()));
 #if (!defined Q_WS_HILDON) && (!defined Q_OS_DARWIN)
-    if ( !ONMainWindow::getPortable() )
-        connect ( createSessionIcon,SIGNAL ( clicked() ),
-                  this,SLOT ( slot_createSessionIcon() ) );
+    if (!ONMainWindow::getPortable())
+        connect(createSessionIcon, SIGNAL(clicked()), this, SLOT(slot_createSessionIcon()));
 #endif
-    connect ( newSession,SIGNAL ( clicked() ),this,SLOT ( slotNew() ) );
-    bLay->setSpacing ( 5 );
+    connect(newSession, SIGNAL(clicked()), this, SLOT(slotNew()));
+    bLay->setSpacing(5);
     bLay->addStretch();
-    bLay->addWidget ( ok );
-    ml->addWidget ( fr );
-    ml->addLayout ( bLay );
+    bLay->addWidget(ok);
+    ml->addWidget(fr);
+    ml->addLayout(bLay);
 
-    fr->setFrameStyle ( QFrame::StyledPanel | QFrame::Raised );
-    fr->setLineWidth ( 2 );
+    fr->setFrameStyle(QFrame::StyledPanel | QFrame::Raised);
+    fr->setLineWidth(2);
 
-    setSizeGripEnabled ( true );
-    setWindowIcon (
-        QIcon (
-            ( ( ONMainWindow* ) parent )->iconsPath (
-                "/32x32/edit.png" ) ) );
+    setSizeGripEnabled(true);
+    setWindowIcon(QIcon(((ONMainWindow *) parent)->iconsPath("/32x32/edit.png")));
 
-    setWindowTitle ( tr ( "Session management" ) );
+    setWindowTitle(tr("Session management"));
     loadSessions();
-    connect (sessions, SIGNAL (itemPressed (QTreeWidgetItem *, int)),
-             this, SLOT (slot_endisable (QTreeWidgetItem *, int)));
-    connect (sessions, SIGNAL (itemActivated (QTreeWidgetItem *, int)),
-             this, SLOT (slot_endisable (QTreeWidgetItem *, int)));
-    connect (sessions, SIGNAL (itemChanged (QTreeWidgetItem *, int)),
-             this, SLOT (slot_endisable (QTreeWidgetItem *, int)));
-    connect (sessions, SIGNAL (currentItemChanged (QTreeWidgetItem *, QTreeWidgetItem *)),
-             this, SLOT (slot_endisable_ItemChanged_wrapper (QTreeWidgetItem *, QTreeWidgetItem *)));
-    connect (sessions,SIGNAL (itemDoubleClicked (QTreeWidgetItem *, int)),
-             this, SLOT (slot_dclicked (QTreeWidgetItem *, int)));
+    connect(sessions,
+            SIGNAL(itemPressed(QTreeWidgetItem *, int)),
+            this,
+            SLOT(slot_endisable(QTreeWidgetItem *, int)));
+    connect(sessions,
+            SIGNAL(itemActivated(QTreeWidgetItem *, int)),
+            this,
+            SLOT(slot_endisable(QTreeWidgetItem *, int)));
+    connect(sessions,
+            SIGNAL(itemChanged(QTreeWidgetItem *, int)),
+            this,
+            SLOT(slot_endisable(QTreeWidgetItem *, int)));
+    connect(sessions,
+            SIGNAL(currentItemChanged(QTreeWidgetItem *, QTreeWidgetItem *)),
+            this,
+            SLOT(slot_endisable_ItemChanged_wrapper(QTreeWidgetItem *, QTreeWidgetItem *)));
+    connect(sessions,
+            SIGNAL(itemDoubleClicked(QTreeWidgetItem *, int)),
+            this,
+            SLOT(slot_dclicked(QTreeWidgetItem *, int)));
 }
 
-
-SessionManageDialog::~SessionManageDialog()
-{}
-
+SessionManageDialog::~SessionManageDialog() {}
 
 void SessionManageDialog::loadSessions()
 {
     sessions->clear();
 
-    /*const QList<SessionButton*> *sess=par->getSessionExplorer()->getSessionsList();*/
-    /*const QList<FolderButton*> *folders=par->getSessionExplorer()->getFoldersList();*/
+    /*const QList<SessionButton*>
+   * *sess=par->getSessionExplorer()->getSessionsList();*/
+    /*const QList<FolderButton*>
+   * *folders=par->getSessionExplorer()->getFoldersList();*/
 
-    removeSession->setEnabled ( false );
-    editSession->setEnabled ( false );
+    removeSession->setEnabled(false);
+    editSession->setEnabled(false);
 #if (!defined Q_WS_HILDON) && (!defined Q_OS_DARWIN)
-    if ( !ONMainWindow::getPortable() )
-        createSessionIcon->setEnabled ( false );
+    if (!ONMainWindow::getPortable())
+        createSessionIcon->setEnabled(false);
 #endif
 
-    QTreeWidgetItem* root;
+    QTreeWidgetItem *root;
 
-    root=new QTreeWidgetItem(sessions);
-    root->setText(0,"/");
-    root->setIcon(0,QIcon(par->iconsPath("/128x128/folder.png")));
+    root = new QTreeWidgetItem(sessions);
+    root->setText(0, "/");
+    root->setIcon(0, QIcon(par->iconsPath("/128x128/folder.png")));
     initFolders(root, "");
     root->setExpanded(true);
-    root->setData(0, SESSIONROLE , false);
+    root->setData(0, SESSIONROLE, false);
 
     sessions->setRootIsDecorated(false);
     sessions->setHeaderHidden(true);
 }
 
-void SessionManageDialog::initFolders(QTreeWidgetItem* parent, QString path)
+void SessionManageDialog::initFolders(QTreeWidgetItem *parent, QString path)
 {
-    FolderButton* b;
-    foreach(b, *(par->getSessionExplorer()->getFoldersList()))
-    {
-        if(b->getPath()==path)
-        {
-            QTreeWidgetItem* it=new QTreeWidgetItem(parent);
-            it->setText(0,b->getName());
-            it->setIcon(0, QIcon(*(b->folderIcon())));
-            QString normPath=(b->getPath()+"/"+b->getName()).split("/",QString::SkipEmptyParts).join("/");
-            it->setData(0,Qt::UserRole, normPath+"/");
-            it->setData(0, SESSIONROLE , false);
+    FolderButton *b;
+    foreach (b, *(par->getSessionExplorer()->getFoldersList())) {
+        if (b->getPath() == path) {
+            QTreeWidgetItem *it = new QTreeWidgetItem(parent);
+            it->setText(0, b->getName());
+            it->setIcon(0, QIcon(b->folderIcon()));
+            QString normPath
+                = (b->getPath() + "/" + b->getName()).split("/", Qt::SkipEmptyParts).join("/");
+            it->setData(0, Qt::UserRole, normPath + "/");
+            it->setData(0, SESSIONROLE, false);
             initFolders(it, normPath);
         }
     }
-    for(int i=0; i< par->getSessionExplorer()->getSessionsList()->count(); ++i)
-    {
-        SessionButton* s=par->getSessionExplorer()->getSessionsList()->at(i);
-        if(s->getPath()==path)
-        {
-            QTreeWidgetItem* it=new QTreeWidgetItem(parent);
-            it->setText(0,s->name());
-            it->setIcon(0, QIcon(*(s->sessIcon())));
-            QString normPath=(s->getPath()+"/"+s->name()).split("/",QString::SkipEmptyParts).join("/");
-            it->setData(0,Qt::UserRole, normPath+"/");
+    for (int i = 0; i < par->getSessionExplorer()->getSessionsList()->count(); ++i) {
+        SessionButton *s = par->getSessionExplorer()->getSessionsList()->at(i);
+        if (s->getPath() == path) {
+            QTreeWidgetItem *it = new QTreeWidgetItem(parent);
+            it->setText(0, s->name());
+            it->setIcon(0, QIcon(s->sessIcon()));
+            QString normPath
+                = (s->getPath() + "/" + s->name()).split("/", Qt::SkipEmptyParts).join("/");
+            it->setData(0, Qt::UserRole, normPath + "/");
             it->setData(0, SESSIONROLE, true);
             it->setData(0, SESSIONIDROLE, i);
             initFolders(it, normPath);
@@ -197,45 +190,45 @@ void SessionManageDialog::initFolders(QTreeWidgetItem* parent, QString path)
     }
 }
 
-
-void SessionManageDialog::slot_endisable ( QTreeWidgetItem* item, int col)
+void SessionManageDialog::slot_endisable(QTreeWidgetItem *item, int col)
 {
-    Q_UNUSED (col);
+    Q_UNUSED(col);
 
-    bool isSess=(item && item->data(0, SESSIONROLE).toBool());
+    bool isSess = (item && item->data(0, SESSIONROLE).toBool());
     x2goDebug << "slot_endisable: isSess: " << isSess;
 
-    if(!isSess)
-    {
-        if(item)
-            currentPath=item->data(0,Qt::UserRole).toString().split("/",QString::SkipEmptyParts).join("/");
+    if (!isSess) {
+        if (item)
+            currentPath
+                = item->data(0, Qt::UserRole).toString().split("/", Qt::SkipEmptyParts).join("/");
         else
-	    currentPath="/";
+            currentPath = "/";
         x2goDebug << "slot_endisable: no session, currentPath(?): " << currentPath;
     }
 
-    removeSession->setEnabled ( isSess );
-    editSession->setEnabled ( isSess );
+    removeSession->setEnabled(isSess);
+    editSession->setEnabled(isSess);
 #if (!defined Q_WS_HILDON) && (!defined Q_OS_DARWIN)
-    if ( !ONMainWindow::getPortable() )
-        createSessionIcon->setEnabled ( isSess );
+    if (!ONMainWindow::getPortable())
+        createSessionIcon->setEnabled(isSess);
 #endif
 }
 
-void SessionManageDialog::slot_endisable_ItemChanged_wrapper (QTreeWidgetItem *item, QTreeWidgetItem *) {
-  /*
+void SessionManageDialog::slot_endisable_ItemChanged_wrapper(QTreeWidgetItem *item,
+                                                             QTreeWidgetItem *)
+{
+    /*
    * The int parameter of slot_endisable is unused anyway,
    * just use the default value in this special case.
    */
-  slot_endisable (item);
+    slot_endisable(item);
 }
 
-void SessionManageDialog::slot_dclicked ( QTreeWidgetItem* item, int )
+void SessionManageDialog::slot_dclicked(QTreeWidgetItem *item, int)
 {
-    if(item->data(0, SESSIONROLE).toBool())
+    if (item->data(0, SESSIONROLE).toBool())
         slot_edit();
 }
-
 
 void SessionManageDialog::slotNew()
 {
@@ -244,30 +237,30 @@ void SessionManageDialog::slotNew()
     loadSessions();
 }
 
-
 void SessionManageDialog::slot_edit()
 {
-    if((! sessions->currentItem()) || (! sessions->currentItem()->data(0, SESSIONROLE).toBool()))
+    if ((!sessions->currentItem()) || (!sessions->currentItem()->data(0, SESSIONROLE).toBool()))
         return;
-    int ind=sessions->currentItem()->data(0, SESSIONIDROLE).toInt();
-    par->getSessionExplorer()->slotEdit ( par->getSessionExplorer()->getSessionsList()->at ( ind ) );
+    int ind = sessions->currentItem()->data(0, SESSIONIDROLE).toInt();
+    par->getSessionExplorer()->slotEdit(par->getSessionExplorer()->getSessionsList()->at(ind));
     loadSessions();
 }
 
 void SessionManageDialog::slot_createSessionIcon()
 {
-    if((! sessions->currentItem()) || (! sessions->currentItem()->data(0, SESSIONROLE).toBool()))
+    if ((!sessions->currentItem()) || (!sessions->currentItem()->data(0, SESSIONROLE).toBool()))
         return;
-    int ind=sessions->currentItem()->data(0, SESSIONIDROLE).toInt();
-    par->getSessionExplorer()->slotCreateDesktopIcon ( par->getSessionExplorer()->getSessionsList()->at ( ind ) );
+    int ind = sessions->currentItem()->data(0, SESSIONIDROLE).toInt();
+    par->getSessionExplorer()->slotCreateDesktopIcon(
+        par->getSessionExplorer()->getSessionsList()->at(ind));
 }
-
 
 void SessionManageDialog::slot_delete()
 {
-    if((! sessions->currentItem()) || (! sessions->currentItem()->data(0, SESSIONROLE).toBool()))
+    if ((!sessions->currentItem()) || (!sessions->currentItem()->data(0, SESSIONROLE).toBool()))
         return;
-    int ind=sessions->currentItem()->data(0, SESSIONIDROLE).toInt();
-    par->getSessionExplorer()->slotDeleteButton ( par->getSessionExplorer()->getSessionsList()->at ( ind ) );
+    int ind = sessions->currentItem()->data(0, SESSIONIDROLE).toInt();
+    par->getSessionExplorer()->slotDeleteButton(
+        par->getSessionExplorer()->getSessionsList()->at(ind));
     loadSessions();
 }

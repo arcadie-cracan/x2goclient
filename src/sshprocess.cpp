@@ -1,26 +1,25 @@
 /**************************************************************************
-*   Copyright (C) 2005-2020 by Oleksandr Shneyder                         *
-*                              <o.shneyder@phoca-gmbh.de>                 *
-*                                                                         *
-*   This program is free software; you can redistribute it and/or modify  *
-*   it under the terms of the GNU General Public License as published by  *
-*   the Free Software Foundation; either version 2 of the License, or     *
-*   (at your option) any later version.                                   *
-*   This program is distributed in the hope that it will be useful,       *
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
-*   GNU General Public License for more details.                          *
-*                                                                         *
-*   You should have received a copy of the GNU General Public License     *
-*   along with this program.  If not, see <https://www.gnu.org/licenses/>. *
-***************************************************************************/
+ *   Copyright (C) 2005-2020 by Oleksandr Shneyder                         *
+ *                              <o.shneyder@phoca-gmbh.de>                 *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program.  If not, see <https://www.gnu.org/licenses/>. *
+ ***************************************************************************/
 
-#include "x2goclientconfig.h"
-#include "x2gologdebug.h"
-#include "sshmasterconnection.h"
 #include "sshprocess.h"
 #include <QTimer>
 #include <QUuid>
+#include "sshmasterconnection.h"
+#include "x2gologdebug.h"
 
 #include <QProcess>
 #ifndef Q_OS_WIN
@@ -33,53 +32,55 @@
 
 #define KEEPALIVE_OPTION " -o ServerAliveInterval=60 "
 
-SshProcess::SshProcess(SshMasterConnection* master, int pid): QObject(0)
+SshProcess::SshProcess(SshMasterConnection *master, int pid)
+    : QObject(0)
 {
-    masterCon=master;
-    serverSocket=0;
-    connect(master,SIGNAL(stdErr(SshProcess*,QByteArray)),this,SLOT(slotStdErr(SshProcess*,QByteArray)));
-    connect(master,SIGNAL(ioErr(SshProcess*,QString,QString)),this,SLOT(slotIOerr(SshProcess*,QString,QString)));
-    tunnel=false;
-    normalExited=true;
-    this->pid=pid;
-    proc=0l;
-    execProcess=false;
+    masterCon = master;
+    serverSocket = 0;
+    connect(master,
+            SIGNAL(stdErr(SshProcess *, QByteArray)),
+            this,
+            SLOT(slotStdErr(SshProcess *, QByteArray)));
+    connect(master,
+            SIGNAL(ioErr(SshProcess *, QString, QString)),
+            this,
+            SLOT(slotIOerr(SshProcess *, QString, QString)));
+    tunnel = false;
+    normalExited = true;
+    this->pid = pid;
+    proc = 0l;
+    execProcess = false;
 }
 
 SshProcess::~SshProcess()
 {
 #ifdef DEBUG
-    x2goDebug<<"SshProcess destructor called.";
+    x2goDebug << "SshProcess destructor called.";
 #endif
 
-    if (proc)
-    {
-        if (tunnel)
-        {
-            disconnect(proc,SIGNAL(finished(int,QProcess::ExitStatus)),this,
-                       SLOT(slotSshProcFinished(int,QProcess::ExitStatus)));
-            disconnect(proc,SIGNAL(readyReadStandardError()),this,SLOT(slotSshProcStdErr()));
-            disconnect(proc,SIGNAL(readyReadStandardOutput()),this,SLOT(slotSshProcStdOut()));
+    if (proc) {
+        if (tunnel) {
+            disconnect(proc,
+                       SIGNAL(finished(int, QProcess::ExitStatus)),
+                       this,
+                       SLOT(slotSshProcFinished(int, QProcess::ExitStatus)));
+            disconnect(proc, SIGNAL(readyReadStandardError()), this, SLOT(slotSshProcStdErr()));
+            disconnect(proc, SIGNAL(readyReadStandardOutput()), this, SLOT(slotSshProcStdOut()));
         }
-        if (proc->state()==QProcess::Running && execProcess)
-        {
-            if(!proc->waitForFinished(3000))
-            {
+        if (proc->state() == QProcess::Running && execProcess) {
+            if (!proc->waitForFinished(3000)) {
                 proc->terminate();
             }
         }
-        if (proc->state()==QProcess::Running)
-        {
+        if (proc->state() == QProcess::Running) {
             proc->kill();
         }
-        if(proc->state()!=QProcess::Running)
-        {
+        if (proc->state() != QProcess::Running) {
             delete proc;
         }
-        proc=0;
+        proc = 0;
     }
-    if (serverSocket>0)
-    {
+    if (serverSocket > 0) {
 #ifdef Q_OS_WIN
         closesocket(serverSocket);
         WSACleanup();
@@ -89,7 +90,6 @@ SshProcess::~SshProcess()
 #endif
     }
 }
-
 
 void SshProcess::slotCheckNewConnection()
 {
@@ -102,59 +102,59 @@ void SshProcess::slotCheckNewConnection()
     FD_ZERO(&rfds);
     FD_SET(serverSocket, &rfds);
 
-    if (select(serverSocket+1,&rfds,NULL,NULL,&tv)<=0)
+    if (select(serverSocket + 1, &rfds, NULL, NULL, &tv) <= 0)
         return;
 
 #ifdef DEBUG
-    x2goDebug<<"New TCP connection.";
+    x2goDebug << "New TCP connection.";
 #endif
-    int tcpSocket=accept(serverSocket, (struct sockaddr*)&address,&addrlen);
+    int tcpSocket = accept(serverSocket, (struct sockaddr *) &address, &addrlen);
 
 #ifdef DEBUG
-    x2goDebug<<"New socket: "<<tcpSocket;
+    x2goDebug << "New socket: " << tcpSocket;
 #endif
-    masterCon->addChannelConnection(this, tcpSocket, forwardHost, forwardPort, localHost,
+    masterCon->addChannelConnection(this,
+                                    tcpSocket,
+                                    forwardHost,
+                                    forwardPort,
+                                    localHost,
                                     ntohs(address.sin_port));
 }
 
-
 void SshProcess::tunnelLoop()
 {
-
-    serverSocket=socket(AF_INET, SOCK_STREAM, 0);
-    if (serverSocket<=0)
-    {
-        QString err=tr("Error creating socket.");
-        x2goDebug<<err<<endl;
-        emit sshFinished(false,err,pid);
+    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverSocket <= 0) {
+        QString err = tr("Error creating socket.");
+        x2goDebug << err << Qt::endl;
+        emit sshFinished(false, err, pid);
         return;
     }
 #ifndef Q_OS_WIN
-    const int y=1;
+    const int y = 1;
 #else
-    const char y=1;
+    const char y = 1;
 #endif
-    setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR,&y, sizeof(int));
-    setsockopt(serverSocket, IPPROTO_TCP, TCP_NODELAY,&y, sizeof(int));
+    setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &y, sizeof(int));
+    setsockopt(serverSocket, IPPROTO_TCP, TCP_NODELAY, &y, sizeof(int));
 
-    address.sin_family=AF_INET;
-    address.sin_addr.s_addr=htonl(INADDR_LOOPBACK);
-    address.sin_port=htons(localPort);
-    if (bind(serverSocket,(struct sockaddr*) &address,sizeof(address))!=0)
-    {
-        QString err=tr("Error binding ")+localHost+":"+QString::number(localPort);
-        x2goDebug<<err<<endl;
-        emit sshFinished(false,err,pid);
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    address.sin_port = htons(localPort);
+    if (bind(serverSocket, (struct sockaddr *) &address, sizeof(address)) != 0) {
+        QString err = tr("Error binding ") + localHost + ":" + QString::number(localPort);
+        x2goDebug << err << Qt::endl;
+        emit sshFinished(false, err, pid);
         return;
     }
-    listen(serverSocket,5);
-    addrlen=sizeof(struct sockaddr_in);
-    QTimer* timer=new QTimer();
-    connect(timer,SIGNAL(timeout()),this,SLOT(slotCheckNewConnection()));
+    listen(serverSocket, 5);
+    addrlen = sizeof(struct sockaddr_in);
+    QTimer *timer = new QTimer();
+    connect(timer, SIGNAL(timeout()), this, SLOT(slotCheckNewConnection()));
     timer->start(100);
     emit sshTunnelOk(pid);
 #ifdef DEBUG
-    x2goDebug<<"Direct tunnel: waiting for connections on "<<localHost<<":"<<localPort;
+    x2goDebug << "Direct tunnel: waiting for connections on " << localHost << ":" << localPort;
 #endif
 }
 
@@ -162,7 +162,7 @@ void SshProcess::tunnelLoop()
 #include <QSettings>
 void SshProcess::addPuttyReg(QString host, QString uuidStr)
 {
-    QSettings st("HKEY_CURRENT_USER\\Software\\SimonTatham\\PuTTY\\Sessions\\"+uuidStr,
+    QSettings st("HKEY_CURRENT_USER\\Software\\SimonTatham\\PuTTY\\Sessions\\" + uuidStr,
                  QSettings::NativeFormat);
     st.setValue("HostName", host);
     st.setValue("GssapiFwd", (uint) 1);
@@ -171,15 +171,16 @@ void SshProcess::addPuttyReg(QString host, QString uuidStr)
 
 void SshProcess::rmPuttyReg(QString uuidStr)
 {
-    if (uuidStr.isEmpty())
-    {
+    if (uuidStr.isEmpty()) {
 #ifdef DEBUG
-        x2goDebug<<"uuidStr is empty. No PuTTY session reg key to delete.";
+        x2goDebug << "uuidStr is empty. No PuTTY session reg key to delete.";
 #endif
         return;
     }
 #ifdef DEBUG
-    x2goDebug<<"Deleting key in registry: HKEY_CURRENT_USER\\Software\\SimonTatham\\PuTTY\\Sessions\\"+uuidStr;
+    x2goDebug << "Deleting key in registry: "
+                 "HKEY_CURRENT_USER\\Software\\SimonTatham\\PuTTY\\Sessions\\"
+                     + uuidStr;
 #endif
     QSettings st("HKEY_CURRENT_USER\\Software\\SimonTatham\\PuTTY\\Sessions",
                  QSettings::NativeFormat);
@@ -188,153 +189,158 @@ void SshProcess::rmPuttyReg(QString uuidStr)
 }
 #endif
 
-void SshProcess::startNormal(const QString& cmd, bool overridePath)
+void SshProcess::startNormal(const QString &cmd, bool overridePath)
 {
     QUuid uuid = QUuid::createUuid();
     QString uuidStr = uuid.toString().mid(1, 36).toLower();
-    execProcess=true;
+    command = cmd;
+    execProcess = true;
 
-//#ifdef DEBUG
-// ONLY UNCOMMENT FOR TESTING, MIGHT REVEAL PASSWORD WHEN command=RDP
-    x2goDebug<<"Executing remote command via SshProcess object "<<pid<<": "<<cmd;
-// #endif
+    // #ifdef DEBUG
+    //  ONLY UNCOMMENT FOR TESTING, MIGHT REVEAL PASSWORD WHEN command=RDP
+    x2goDebug << "Executing remote command via SshProcess object " << pid << ": " << cmd;
+    // #endif
     QString pathString;
-    if (overridePath)
-    {
+    if (overridePath) {
         pathString = "export PATH=\"/usr/local/bin:/usr/bin:/bin\";";
+    } else {
+        pathString = "";
     }
-    else
-    {
-        pathString= "";
-    }
-    if(!masterCon->useKerberos())
-    {
-        QString shcmd = "bash -l -c 'echo \"X2GODATABEGIN:" + uuidStr + "\"; " + pathString + "export TERM=\"dumb\"; "+cmd+"; echo \"X2GODATAEND:" + uuidStr + "\";'";
-        x2goDebug << "this="<<this<<" Running masterCon->addChannelConnection(this, '" << uuidStr << "', '" << shcmd.left (200) << "');";
+    if (!masterCon->useKerberos()) {
+        QString shcmd = "bash -l -c 'echo \"X2GODATABEGIN:" + uuidStr + "\"; " + pathString
+                        + "export TERM=\"dumb\"; " + cmd + "; echo \"X2GODATAEND:" + uuidStr
+                        + "\";'";
+        x2goDebug << "this=" << this << " Running masterCon->addChannelConnection(this, '"
+                  << uuidStr << "', '" << shcmd.left(200) << "');";
         masterCon->addChannelConnection(this, uuidStr, shcmd);
-        connect(masterCon,SIGNAL(stdOut(SshProcess*,QByteArray)),this,SLOT(slotStdOut(SshProcess*,QByteArray)));
-        connect(masterCon,SIGNAL(channelClosed(SshProcess*,QString)), this,SLOT(slotChannelClosed(SshProcess*,QString)));
-    }
-    else
-    {
-        QString host=masterCon->getHost();
+        connect(masterCon,
+                SIGNAL(stdOut(SshProcess *, QByteArray)),
+                this,
+                SLOT(slotStdOut(SshProcess *, QByteArray)));
+        connect(masterCon,
+                SIGNAL(channelClosed(SshProcess *, QString)),
+                this,
+                SLOT(slotChannelClosed(SshProcess *, QString)));
+    } else {
+        QString host = masterCon->getHost();
 
         QString shcmd = "";
 
         /* On Windows, arguments are automatically wrapped in double quotes.
-         * Additionally, QProcess automatically doubles escape characters before
-         * double quotes and inserts an escape character before any non-escaped
-         * double quotes.
-         * Thus, we don't escape double quotes here and let Qt handle this stuff.
-         *
-         * On UNIX-like platforms, likewise, we MUST NOT escape double quotes,
-         * as there is no preceding "outer double quote" the whole argument
-         * is wrapped in.
-         */
-        shcmd = "bash -l -c 'echo \"X2GODATABEGIN:" + uuidStr + "\";" + pathString + "export TERM=\"dumb\"; "+cmd+"; echo \"X2GODATAEND:" + uuidStr + "\";'";
+     * Additionally, QProcess automatically doubles escape characters before
+     * double quotes and inserts an escape character before any non-escaped
+     * double quotes.
+     * Thus, we don't escape double quotes here and let Qt handle this stuff.
+     *
+     * On UNIX-like platforms, likewise, we MUST NOT escape double quotes,
+     * as there is no preceding "outer double quote" the whole argument
+     * is wrapped in.
+     */
+        shcmd = "bash -l -c 'echo \"X2GODATABEGIN:" + uuidStr + "\";" + pathString
+                + "export TERM=\"dumb\"; " + cmd + "; echo \"X2GODATAEND:" + uuidStr + "\";'";
 
-        proc=new QProcess(this);
-        QString local_cmd = "";
+        proc = new QProcess(this);
+        QString local_cmd;
+        QString portOption;
         QStringList local_args;
 #ifdef Q_OS_WIN
-        if(masterCon->get_kerberosDelegation())
-        {
+        if (masterCon->get_kerberosDelegation()) {
             addPuttyReg(host, uuidStr);
             host = uuidStr;
         }
         local_cmd = "plink";
-
+        portOption = QString("-P %1 -l %2 %3")
+                         .arg(masterCon->getPort())
+                         .arg(masterCon->getUser())
+                         .arg(host);
         /* General options. */
         local_args << "-batch";
-
-        /* Port option. Must be the last one added! */
-        local_args << "-P";
 #else
         local_cmd = "ssh";
 
         /* General options. */
-        local_args << QString (KEEPALIVE_OPTION).trimmed ().split (" ");
+        local_args << QString(KEEPALIVE_OPTION).trimmed();
 
         /* Kerberos options. */
         local_args << "-k";
-        if(masterCon->get_kerberosDelegation())
-        {
+        if (masterCon->get_kerberosDelegation()) {
             local_args << "-K";
         }
 
         /* Authentication options. */
-        local_args << "-o" << "GSSApiAuthentication=yes"
-                   << "-o" << "PasswordAuthentication=no"
-                   << "-o" << "PubkeyAuthentication=no";
+        local_args << "-o GSSApiAuthentication=yes"
+                   << "-o PasswordAuthentication=no"
+                   << "-o PubkeyAuthentication=no";
 
-        /* Port option. Must be the last one added! */
-        local_args << "-p";
+        portOption = QString("-p %1 -l %2 %3")
+                         .arg(masterCon->getPort())
+                         .arg(masterCon->getUser())
+                         .arg(host);
 #endif
-        local_args << QString::number (masterCon->getPort ())
-                   << "-l" << masterCon->getUser ()
-                   << host;
+        /* Port option. Must be the last one added! */
+        local_args << portOption;
 
         /* On Windows, arguments are automatically wrapped in double quotes.
-         * This means we do not have to wrap shcmd ourselves.
-         *
-         * On UNIX-like platforms, we likewise MUST NOT wrap the command in
-         * double quotes, as each entry in the arguments list is passed as
-         * one entry in argv.
-         */
+     * This means we do not have to wrap shcmd ourselves.
+     *
+     * On UNIX-like platforms, we likewise MUST NOT wrap the command in
+     * double quotes, as each entry in the arguments list is passed as
+     * one entry in argv.
+     */
         local_args << shcmd;
 
-        x2goDebug << "Invoking SSH command via SshProcess object " << pid << ": "
-                  << local_cmd << " " << local_args.join (" ");
-        procUuid=uuidStr;
-        proc->start (local_cmd, local_args);
+        x2goDebug << "Invoking SSH command via SshProcess object " << pid << ": " << local_cmd
+                  << " " << local_args.join(" ");
+        procUuid = uuidStr;
+        proc->start(local_cmd, local_args);
 
-        if (!proc->waitForStarted(15000))
-        {
-            stdErrString=proc->errorString();
+        if (!proc->waitForStarted(15000)) {
+            stdErrString = proc->errorString();
 #ifdef DEBUG
-            //x2goDebug<<"ssh start failed:" <<stdErrString<<endl;
+            // x2goDebug<<"ssh start failed:" <<stdErrString<<Qt::endl;
 #endif
             slotChannelClosed(this, uuidStr);
             return;
         }
-        connect(proc,SIGNAL(finished(int,QProcess::ExitStatus)),this,
-                SLOT(slotSshProcFinished(int,QProcess::ExitStatus)));
-        connect(proc,SIGNAL(readyReadStandardError()),this,SLOT(slotSshProcStdErr()));
-        connect(proc,SIGNAL(readyReadStandardOutput()),this,SLOT(slotSshProcStdOut()));
+        connect(proc,
+                SIGNAL(finished(int, QProcess::ExitStatus)),
+                this,
+                SLOT(slotSshProcFinished(int, QProcess::ExitStatus)));
+        connect(proc, SIGNAL(readyReadStandardError()), this, SLOT(slotSshProcStdErr()));
+        connect(proc, SIGNAL(readyReadStandardOutput()), this, SLOT(slotSshProcStdOut()));
     }
-
 }
 
 void SshProcess::start_cp(QString src, QString dst)
 {
-    x2goDebug<<"Copying file via SshProcess object "<<pid<<": "<<src<<" -> "<<dst;
+    x2goDebug << "Copying file via SshProcess object " << pid << ": " << src << " -> " << dst;
 
-    scpSource=src;
+    scpSource = src;
 
     /*
-     * pscp and newer libssh versions with the CVE-2019-14889 fixes treat
-     * paths as literal strings when in SFTP/SCP mode.
-     *
-     * Paths like the following will lead to errors:
-     *  - ~user/foo.txt
-     *  - ~/foo.txt
-     *  - ${HOME}/foo.txt
-     *  - $HOME/foo.txt
-     *
-     * However, relative paths are interpreted as relative to the user's home
-     * dir.
-     * For example:
-     * foo.txt
-     *
-     * This workaround assumes that files will never be uploaded to a home dir
-     * other than the user's.
-     */
+   * pscp and newer libssh versions with the CVE-2019-14889 fixes treat
+   * paths as literal strings when in SFTP/SCP mode.
+   *
+   * Paths like the following will lead to errors:
+   *  - ~user/foo.txt
+   *  - ~/foo.txt
+   *  - ${HOME}/foo.txt
+   *  - $HOME/foo.txt
+   *
+   * However, relative paths are interpreted as relative to the user's home
+   * dir.
+   * For example:
+   * foo.txt
+   *
+   * This workaround assumes that files will never be uploaded to a home dir
+   * other than the user's.
+   */
 
-    dst.remove("~"+masterCon->getUser()+"/");
-    dst.remove("~"+masterCon->getUser()    );
+    dst.remove("~" + masterCon->getUser() + "/");
+    dst.remove("~" + masterCon->getUser());
 
     dst.remove("~/");
-    dst.remove("~" );
+    dst.remove("~");
 
     dst.remove("${HOME}/");
     dst.remove("${HOME}");
@@ -342,224 +348,246 @@ void SshProcess::start_cp(QString src, QString dst)
     dst.remove("$HOME/");
     dst.remove("$HOME");
 
-    if(!masterCon->useKerberos())
-    {
-        connect(masterCon, SIGNAL(copyErr(SshProcess*,QString,QString)), this,
+    if (!masterCon->useKerberos()) {
+        connect(masterCon,
+                SIGNAL(copyErr(SshProcess*,QString,QString)),
+                this,
                 SLOT(slotCopyErr(SshProcess*,QString,QString)));
-        connect(masterCon, SIGNAL(copyOk(SshProcess*)), this,SLOT(slotCopyOk(SshProcess*)));
-        masterCon->addCopyRequest(this,src,dst);
-    }
-    else
-    {
-        proc=new QProcess(this);
+        connect(masterCon, SIGNAL(copyOk(SshProcess*)), this, SLOT(slotCopyOk(SshProcess*)));
+        masterCon->addCopyRequest(this, src, dst);
+    } else {
+        proc = new QProcess(this);
+        QString scpCmd;
+        QStringList options;
+        QString portOption = QString("-P %1").arg(masterCon->getPort());
+        QString dstOption = masterCon->getUser() + "@" + masterCon->getHost() + ":" + dst;
 #ifdef Q_OS_WIN
-        QString sshString="pscp -batch -P "+
+        scpCmd = "pscp";
+        options << "-batch"
+                << portOption
+                << src
+                << dstOption;
+        // QString sshString = "pscp -batch -P " +
 #else
-        QString sshString="scp -o GSSApiAuthentication=yes -o PasswordAuthentication=no -o PubkeyAuthentication=no -P "+
+        scpCmd = "scp";
+        options << "-o GSSApiAuthentication=yes"
+                << "-o PasswordAuthentication=no"
+                << "-o PubkeyAuthentication=no"
+                << portOption
+                << src
+                << dstOption;
+        // QString sshString = "scp -o GSSApiAuthentication=yes -o PasswordAuthentication=no -o "
+        //                     "PubkeyAuthentication=no -P "
+        //                     +
 #endif
-                          QString::number(masterCon->getPort())+" "+src+" "+
-                          masterCon->getUser()+"@"+ masterCon->getHost()+":"+dst;
+                            // QString::number(masterCon->getPort()) + " " + src + " "
+                            // + masterCon->getUser() + "@" + masterCon->getHost() + ":" + dst;
 #ifdef DEBUG
-        x2goDebug<<"Running scp:" <<sshString;
+        x2goDebug << "Running scp:" << scpCmd << options.join(" ");
 #endif
-        proc->start(sshString);
+        proc->start(scpCmd, options);
 
-        if (!proc->waitForStarted(15000))
-        {
-            stdErrString=proc->errorString();
+        if (!proc->waitForStarted(15000)) {
+            stdErrString = proc->errorString();
 #ifdef DEBUG
-            x2goDebug<<"SSH start failed:" <<stdErrString;
+            x2goDebug << "SSH start failed:" << stdErrString;
 #endif
-            slotChannelClosed(this,"");
+            slotChannelClosed(this, "");
             return;
         }
-        connect(proc,SIGNAL(finished(int,QProcess::ExitStatus)),this,
+        connect(proc,
+                SIGNAL(finished(int,QProcess::ExitStatus)),
+                this,
                 SLOT(slotSshProcFinished(int,QProcess::ExitStatus)));
-        connect(proc,SIGNAL(readyReadStandardError()),this,SLOT(slotSshProcStdErr()));
-        connect(proc,SIGNAL(readyReadStandardOutput()),this,SLOT(slotSshProcStdOut()));
+        connect(proc, SIGNAL(readyReadStandardError()), this, SLOT(slotSshProcStdErr()));
+        connect(proc, SIGNAL(readyReadStandardOutput()), this, SLOT(slotSshProcStdOut()));
     }
 }
 
-
-void SshProcess::startTunnel(const QString& forwardHost, uint forwardPort, const QString& localHost,
-                             uint localPort, bool reverse)
+void SshProcess::startTunnel(const QString &forwardHost,
+                             uint forwardPort,
+                             const QString &localHost,
+                             uint localPort,
+                             bool reverse)
 {
-    x2goDebug<<"Starting tunnel via SshProcess object "<<pid<<": "<<forwardHost<<":"<<forwardPort<<" -> "<<localHost<<":"<<localPort<<endl;
+    x2goDebug << "Starting tunnel via SshProcess object " << pid << ": " << forwardHost << ":"
+              << forwardPort << " -> " << localHost << ":" << localPort << Qt::endl;
 
-    tunnel=true;
-    tunnelOkEmited=false;
-    if(!masterCon->useKerberos())
-    {
-        this->forwardHost=forwardHost;
-        this->forwardPort=forwardPort;
-        this->localHost=localHost;
-        this->localPort=localPort;
+    tunnel = true;
+    tunnelOkEmited = false;
+    if (!masterCon->useKerberos()) {
+        this->forwardHost = forwardHost;
+        this->forwardPort = forwardPort;
+        this->localHost = localHost;
+        this->localPort = localPort;
         if (!reverse)
             tunnelLoop();
-    }
-    else
-    {
-        proc=new QProcess(0);
+    } else {
+        QString sshCmd;
+        QStringList sshOptions;
+        QString portOption;
+        proc = new QProcess(0);
 #ifdef Q_OS_WIN
-        QString sshString="plink -batch -P "+
+        sshCmd = "plink";
+        sshOptions << "-batch";
+        portOption = "-P ";
 #else
-        QString sshString=QString::null+"ssh"+ KEEPALIVE_OPTION +"-o GSSApiAuthentication=yes -o PasswordAuthentication=no -o PubkeyAuthentication=no -p "+
+        sshCmd = "ssh";
+        sshOptions << QString(KEEPALIVE_OPTION).trimmed();
+        sshOptions << "-o GSSApiAuthentication=yes"
+                   << "-o PasswordAuthentication=no"
+                   << "-o PubkeyAuthentication=no";
+        portOption = "-p "
 #endif
-                          QString::number(masterCon->getPort())+" "+
-                          masterCon->getUser()+"@"+
-                          masterCon->getHost() + " -N -v ";
+        sshOptions << portOption
+                          + QString("%1 %2@%3 -N -v")
+                                .arg(masterCon->getPort())
+                                .arg(masterCon->getUser())
+                                .arg(masterCon->getHost());
         if (!reverse)
-            sshString+=" -L " + QString::number(localPort)+":"+forwardHost+":"+QString::number(forwardPort);
+            sshOptions << QString("-L %1:%2:%3").arg(localPort).arg(forwardHost).arg(forwardPort);
         else
-            sshString+=" -R "+ QString::number(forwardPort)+":"+forwardHost+":"+QString::number(localPort);
+            sshOptions << QString("-R %1:%2:%3").arg(forwardPort).arg(forwardHost).arg(localPort);
 
 #ifdef DEBUG
-        x2goDebug<<"Tunnel: running ssh:" <<sshString;
+        x2goDebug << "Tunnel: running ssh:" << sshCmd << sshOptions.join(" ");
 #endif
-        proc->start(sshString);
+        proc->start(sshCmd, sshOptions);
 
-        if (!proc->waitForStarted(5000))
-        {
-            stdErrString=proc->errorString();
+        if (!proc->waitForStarted(5000)) {
+            stdErrString = proc->errorString();
 #ifdef DEBUG
-            x2goDebug<<"SSH start failed:" <<stdErrString;
+            x2goDebug << "SSH start failed:" << stdErrString;
 #endif
-            slotChannelClosed(this,"");
+            slotChannelClosed(this, "");
             return;
         }
-        connect(proc,SIGNAL(finished(int,QProcess::ExitStatus)),this,
+        connect(proc,
+                SIGNAL(finished(int,QProcess::ExitStatus)),
+                this,
                 SLOT(slotSshProcFinished(int,QProcess::ExitStatus)));
-        connect(proc,SIGNAL(readyReadStandardError()),this,SLOT(slotSshProcStdErr()));
-        connect(proc,SIGNAL(readyReadStandardOutput()),this,SLOT(slotSshProcStdOut()));
+        connect(proc, SIGNAL(readyReadStandardError()), this, SLOT(slotSshProcStdErr()));
+        connect(proc, SIGNAL(readyReadStandardOutput()), this, SLOT(slotSshProcStdOut()));
     }
 }
 
-void SshProcess::slotStdErr(SshProcess* creator, QByteArray data)
+void SshProcess::slotStdErr(SshProcess *creator, QByteArray data)
 {
-    if (creator!=this)
+    if (creator != this)
         return;
 #ifdef DEBUG
-//     x2goDebug<<"new err data:"<<data<<endl;
+//     x2goDebug<<"new err data:"<<data<<Qt::endl;
 #endif
-    stdErrString+=data;
+    stdErrString += data;
 
-    if(tunnel && !tunnelOkEmited)
-    {
+    if (tunnel && !tunnelOkEmited) {
 #ifdef Q_OS_WIN
-        if(stdErrString.indexOf("Access granted")!=-1)
+        if (stdErrString.indexOf("Access granted") != -1)
 #else
-        if(stdErrString.indexOf("Entering interactive session")!=-1)
+        if (stdErrString.indexOf("Entering interactive session") != -1)
 #endif
         {
-            tunnelOkEmited=true;
+            tunnelOkEmited = true;
 #ifdef DEBUG
-            x2goDebug<<"Tunnel OK";
+            x2goDebug << "Tunnel OK";
 #endif
             emit sshTunnelOk(pid);
         }
     }
 }
 
-void SshProcess::slotStdOut(SshProcess* creator, QByteArray data)
+void SshProcess::slotStdOut(SshProcess *creator, QByteArray data)
 {
-    if (creator!=this)
+    if (creator != this)
         return;
-//     x2goDebug<<"new data"<<data<<endl;
-    stdOutString+=data;
+    //     x2goDebug<<"new data"<<data<<Qt::endl;
+    stdOutString += data;
 }
 
-void SshProcess::slotIOerr(SshProcess* creator, QString message, QString sshSessionErr)
+void SshProcess::slotIOerr(SshProcess *creator, QString message, QString sshSessionErr)
 {
-    if (creator!=this)
+    if (creator != this)
         return;
     if (sshSessionErr.length())
-        sshSessionErr = " - "+sshSessionErr;
+        sshSessionErr = " - " + sshSessionErr;
 #ifdef DEBUG
-    x2goDebug<<"I/O error: "<<message<<sshSessionErr<<" ("<<pid<<").";
+    x2goDebug << "I/O error: " << message << sshSessionErr << " (" << pid << ").";
 #endif
-    normalExited=false;
-    abortString="I/O error: "+message+sshSessionErr;
+    normalExited = false;
+    abortString = "I/O error: " + message + sshSessionErr;
 }
 
-void SshProcess::slotCopyErr(SshProcess* creator, QString message, QString sshSessionErr)
+void SshProcess::slotCopyErr(SshProcess *creator, QString message, QString sshSessionErr)
 {
-    if (creator!=this)
+    if (creator != this)
         return;
-    emit sshFinished(false, message+" - "+sshSessionErr, pid);
+    emit sshFinished(false, message + " - " + sshSessionErr, pid);
 }
 
-void SshProcess::slotCopyOk(SshProcess* creator)
+void SshProcess::slotCopyOk(SshProcess *creator)
 {
-    if (creator!=this)
+    if (creator != this)
         return;
-    emit sshFinished(true,"", pid);
+    emit sshFinished(true, "", pid);
 }
 
-void SshProcess::slotReverseTunnelOk(SshProcess* creator)
+void SshProcess::slotReverseTunnelOk(SshProcess *creator)
 {
-    if (creator==this)
+    if (creator == this)
         emit sshTunnelOk(pid);
 }
 
-void SshProcess::slotReverseTunnelFailed(SshProcess* creator, QString error)
+void SshProcess::slotReverseTunnelFailed(SshProcess *creator, QString error)
 {
-    if (creator==this)
-        emit sshFinished(false,error,pid);
-
+    if (creator == this)
+        emit sshFinished(false, error, pid);
 }
 
-
-void SshProcess::slotChannelClosed(SshProcess* creator, QString uuid)
+void SshProcess::slotChannelClosed(SshProcess *creator, QString uuid)
 {
-    if (creator!=this)
+    if (creator != this)
         return;
     QString output;
-    if (!normalExited)
-    {
-        output=abortString;
-        if (output.length()<5)
-        {
-            output=stdErrString;
+    if (!normalExited) {
+        output = abortString;
+        if (output.length() < 5) {
+            output = stdErrString;
         }
-    }
-    else
-    {
-        QString begin_marker = "X2GODATABEGIN:"+uuid+"\n";
-        QString end_marker = "X2GODATAEND:"+uuid+"\n";
-        int output_begin=stdOutString.indexOf(begin_marker) + begin_marker.length();
-        int output_end=stdOutString.indexOf(end_marker);
-        output = stdOutString.mid(output_begin, output_end-output_begin);
+    } else {
+        QString begin_marker = "X2GODATABEGIN:" + uuid + "\n";
+        QString end_marker = "X2GODATAEND:" + uuid + "\n";
+        int output_begin = stdOutString.indexOf(begin_marker) + begin_marker.length();
+        int output_end = stdOutString.indexOf(end_marker);
+        output = stdOutString.mid(output_begin, output_end - output_begin);
         x2goDebug << "SSH finished: raw output (stdout): " << stdOutString;
-        if ( output.length()<=0 &&  stdErrString.length() >0 )
-        {
-            normalExited=false;
-            output=stdErrString;
+        if (output.length() <= 0 && stdErrString.length() > 0) {
+            normalExited = false;
+            output = stdErrString;
 #ifdef DEBUG
-            x2goDebug<<"Have stderr only, something must be wrong.";
+            x2goDebug << "Have stderr only, something must be wrong.";
 #endif
         }
     }
 #ifdef DEBUG
-    x2goDebug<<"SSH finished: "<<normalExited<<" - "<<output<<" ("<<pid<<").";
+    x2goDebug << "SSH finished: " << normalExited << " - " << output << " (" << pid << ").";
 #endif
     emit sshFinished(normalExited, output, pid);
 }
 
 void SshProcess::slotSshProcFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
-    normalExited=false;
-    if (exitCode==0 && exitStatus==QProcess::NormalExit)
-        normalExited=true;
+    normalExited = false;
+    if (exitCode == 0 && exitStatus == QProcess::NormalExit)
+        normalExited = true;
 #ifdef DEBUG
-    x2goDebug<<"SSH process exit code :"<<exitStatus;
+    x2goDebug << "SSH process exit code :" << exitStatus;
 #endif
 #ifdef Q_OS_WIN
-    if(masterCon->useKerberos())
-    {
+    if (masterCon->useKerberos()) {
         rmPuttyReg(procUuid);
     }
 #endif
-    slotChannelClosed(this,procUuid);
+    slotChannelClosed(this, procUuid);
 }
 
 void SshProcess::slotSshProcStdErr()

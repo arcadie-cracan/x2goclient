@@ -35,8 +35,11 @@ class SessionWidget : public ConfigWidget
 {
     Q_OBJECT
 public:
-    SessionWidget ( bool newSession, QString id, ONMainWindow * mv,
-                    QWidget * parent = 0, Qt::WindowFlags f = 0 );
+    SessionWidget(bool newSession,
+                  QString id,
+                  ONMainWindow* mv,
+                  QWidget* parent = 0,
+                  Qt::WindowFlags f = Qt::WindowFlags());
     ~SessionWidget();
     void setDefaults();
     void saveSettings();
@@ -44,7 +47,7 @@ public:
 private slots:
     void slot_getIcon();
     void slot_getKey();
-    void slot_changeCmd ( int var );
+    void slot_changeCmd(int var);
     void slot_rdpOptions();
     void slot_proxyOptions();
     void slot_proxyType();
@@ -59,7 +62,25 @@ public slots:
 #endif
 
 private:
-    enum {KDE,GNOME,LXDE, LXQt, XFCE,MATE,UNITY,CINNAMON,TRINITY,OPENBOX,ICEWM,RDP,XDMCP,SHADOW,OTHER,APPLICATION,PUBLISHED};
+    enum {
+        KDE,
+        GNOME,
+        LXDE,
+        LXQt,
+        XFCE,
+        MATE,
+        UNITY,
+        CINNAMON,
+        TRINITY,
+        OPENBOX,
+        ICEWM,
+        RDP,
+        XDMCP,
+        SHADOW,
+        OTHER,
+        APPLICATION,
+        PUBLISHED
+    };
     QLineEdit* sessName;
     QLineEdit* uname;
     QLineEdit* server;
@@ -107,13 +128,14 @@ private:
     QLineEdit* proxyKey;
     QPushButton* pbOpenProxyKey;
     QLabel* proxyKeyLabel;
+
 private:
     void readConfig();
 signals:
-    void nameChanged ( const QString & );
+    void nameChanged(const QString&);
 #ifdef Q_OS_LINUX
     void directRDP(bool, bool);
-    void settingsChanged(const QString &, const QString &, const QString &);
+    void settingsChanged(const QString&, const QString&, const QString&);
 #endif
 };
 

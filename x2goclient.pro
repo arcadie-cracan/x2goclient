@@ -161,7 +161,7 @@ else:win32 {
   # distributing pkgconfig files on non-UNIX platforms, including Windows.
   # We'll hardcode stuff here. Make sure that it's consistent with the
   # libraries we use on Windows.
-  LIBS += -lssh
+  LIBS += -lssh -lssh_threads
 }
 else {
   # For backwards-compatibility.
@@ -267,10 +267,16 @@ macx {
 win32-* {
   message("building $$TARGET for windows without ldap and cups")
   LIBS += -lwinspool -lws2_32
-  CONFIG += static release
+#  CONFIG += static release
 }
 QT += svg network
-greaterThan(QT_MAJOR_VERSION, 4): QT += x11extras
 
-QMAKE_CXXFLAGS_DEBUG -= -g
-QMAKE_CXXFLAGS_DEBUG += -O2 -g3 -ggdb3 -gdwarf-4
+unix {
+greaterThan(QT_MAJOR_VERSION, 4): QT += x11extras
+}
+win32 {
+QT += winextras
+}
+
+#QMAKE_CXXFLAGS_DEBUG -= -g
+#QMAKE_CXXFLAGS_DEBUG += -O2 -g3 -ggdb3 -gdwarf-4

@@ -18,8 +18,8 @@
 #ifndef SESSIONEXPLORER_H
 #define SESSIONEXPLORER_H
 
-#include <QObject>
 #include <QList>
+#include <QObject>
 #include <QStringList>
 
 class SessionButton;
@@ -29,34 +29,20 @@ class QToolButton;
 class QLabel;
 class QHBoxLayout;
 
-class SessionExplorer: public QObject
+class SessionExplorer : public QObject
 {
     Q_OBJECT
 public:
-    SessionExplorer(ONMainWindow *p);
+    SessionExplorer(ONMainWindow* p);
     ~SessionExplorer();
-    QList<SessionButton*> * getSessionsList()
-    {
-        return &sessions;
-    }
-    QList<FolderButton*> * getFoldersList()
-    {
-        return &folders;
-    }
-    SessionButton* getLastSession() {
-        return lastSession;
-    }
-    void setLastSession(SessionButton* s)
-    {
-        lastSession=s;
-    }
+    QList<SessionButton*>* getSessionsList() { return &sessions; }
+    QList<FolderButton*>* getFoldersList() { return &folders; }
+    SessionButton* getLastSession() { return lastSession; }
+    void setLastSession(SessionButton* s) { lastSession = s; }
     void cleanSessions();
-    SessionButton* createBut ( const QString& id );
+    SessionButton* createBut(const QString& id);
     void placeButtons();
-    QHBoxLayout* getNavigationLayout()
-    {
-        return navigationLayout;
-    }
+    QHBoxLayout* getNavigationLayout() { return navigationLayout; }
     bool isFolderEmpty(QString path);
     void resize();
     void setFolderIcon(QString path, QString icon);
@@ -65,20 +51,13 @@ public:
     void deleteFolder(QString path);
     void updateSessions(QStringList slst);
 
-    QString getCurrentPath()
-    {
-        return currentPath;
-    }
+    QString getCurrentPath() { return currentPath; }
 
-    void setCurrrentPath(QString path)
-    {
-        currentPath=path;
-    }
+    void setCurrrentPath(QString path) { currentPath = path; }
 
     void setEnable(bool enable);
 
-
-//vars
+    //vars
 private:
     QList<SessionButton*> sessions;
     QList<FolderButton*> folders;
@@ -89,20 +68,20 @@ private:
     QHBoxLayout* navigationLayout;
     QString currentPath;
 
-//functions
+    //functions
 private:
     void setNavigationVisible(bool value);
     int findFolder(QString path);
     void createFolder(QString path);
     void getFoldersFromConfig();
-    SessionButton* findSession( const QString& id);
+    SessionButton* findSession(const QString& id);
     void checkPath(SessionButton* s);
 
 public slots:
-    void slotDeleteButton ( SessionButton * bt );
-    void slotEdit ( SessionButton* );
-    void slotCreateDesktopIcon ( SessionButton* bt );
-    void exportsEdit ( SessionButton* bt );
+    void slotDeleteButton(SessionButton* bt);
+    void slotEdit(SessionButton*);
+    void slotCreateDesktopIcon(SessionButton* bt);
+    void exportsEdit(SessionButton* bt);
 private slots:
     void slotFolderSelected(FolderButton* bt);
     void slotLevelUp();

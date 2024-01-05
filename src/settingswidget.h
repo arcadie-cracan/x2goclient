@@ -18,7 +18,7 @@
 #ifndef SETTINGSWIDGET_H
 #define SETTINGSWIDGET_H
 
-#include <configwidget.h>
+#include "configwidget.h"
 
 /**
 	@author Oleksandr Shneyder <oleksandr.shneyder@obviously-nice.de>
@@ -33,13 +33,14 @@ class QPushButton;
 class QMainWindow;
 class QGroupBox;
 
-
 class SettingsWidget : public ConfigWidget
 {
     Q_OBJECT
 public:
-    SettingsWidget ( QString id, ONMainWindow * mw,
-                     QWidget * parent=0, Qt::WindowFlags f=0 );
+    SettingsWidget(QString id,
+                   ONMainWindow* mw,
+                   QWidget* parent = 0,
+                   Qt::WindowFlags f = Qt::WindowFlags());
     ~SettingsWidget();
     void setDefaults();
     void saveSettings();
@@ -54,6 +55,7 @@ private slots:
     void slot_identDisplays();
     void slot_hideIdentWins();
     void slot_kbdClicked();
+
 private:
     QSpinBox* width;
     QSpinBox* height;
@@ -79,16 +81,16 @@ private:
     QLabel* lDisplay;
     bool multiDisp;
     QPushButton* pbIdentDisp;
-    QList <QMainWindow*> identWins;
-    QGroupBox *kgb;
-    QGroupBox *clipGr;
-    QRadioButton *rbClipBoth;
-    QRadioButton *rbClipServer;
-    QRadioButton *rbClipClient;
-    QRadioButton *rbClipNone;
+    QList<QMainWindow*> identWins;
+    QGroupBox* kgb;
+    QGroupBox* clipGr;
+    QRadioButton* rbClipBoth;
+    QRadioButton* rbClipServer;
+    QRadioButton* rbClipClient;
+    QRadioButton* rbClipNone;
 
 #ifdef Q_OS_LINUX
-    QGroupBox *rdpBox;
+    QGroupBox* rdpBox;
     QRadioButton* rRdesktop;
     QRadioButton* rXfreeRDPOld;
     QRadioButton* rXfreeRDPNew;
@@ -97,7 +99,7 @@ private:
     QString server;
     QString user;
     QString port;
-    QGroupBox *xdmcpBox;
+    QGroupBox* xdmcpBox;
     QRadioButton* rXnest;
     QRadioButton* rXephyr;
     QRadioButton* rX2goagent;

@@ -20,16 +20,16 @@
 #ifndef PULSEMANAGER_H
 #define PULSEMANAGER_H
 
-#include <iostream>
+#include <QApplication>
 #include <QDir>
-#include <QTcpSocket>
 #include <QEventLoop>
-#include <QTemporaryFile>
 #include <QHostInfo>
 #include <QProcess>
-#include <QApplication>
+#include <QTcpSocket>
+#include <QTemporaryFile>
 #include <QTimer>
 #include <assert.h>
+#include <iostream>
 
 #ifdef Q_OS_WIN
 #include "windows_stdint.h"
@@ -37,72 +37,70 @@
 #include "unix_stdint.h"
 #endif /* defined (Q_OS_WIN) */
 
-#include "x2gosettings.h"
 #include "wapi.h"
+#include "x2gosettings.h"
 
-class PulseManager: public QObject {
-  Q_OBJECT;
+class PulseManager : public QObject
+{
+    Q_OBJECT;
 
-  public:
-    PulseManager ();
-    ~PulseManager ();
+public:
+    PulseManager();
+    ~PulseManager();
 
-    QProcess::ProcessState state ();
+    QProcess::ProcessState state();
 
-    std::uint16_t get_pulse_port () const;
-    std::uint16_t get_esd_port () const;
-    bool get_record () const;
-    bool get_playback () const;
-    QDir get_pulse_dir () const;
+    std::uint16_t get_pulse_port() const;
+    std::uint16_t get_esd_port() const;
+    bool get_record() const;
+    bool get_playback() const;
+    QDir get_pulse_dir() const;
 
-    bool set_pulse_port (std::uint16_t pulse_port);
-    bool set_esd_port (std::uint16_t esd_port);
-    bool set_record (bool record);
-    bool set_playback (bool playback);
-    void set_debug (bool debug);
-    bool is_server_running () const;
+    bool set_pulse_port(std::uint16_t pulse_port);
+    bool set_esd_port(std::uint16_t esd_port);
+    bool set_record(bool record);
+    bool set_playback(bool playback);
+    void set_debug(bool debug);
+    bool is_server_running() const;
 
+public slots:
+    void start();
+    void restart();
+    void shutdown();
 
+private:
+    PulseManager(const PulseManager &other);
 
-  public slots:
-    void start ();
-    void restart ();
-    void shutdown ();
-
-
-  private:
-    PulseManager (const PulseManager &other);
-
-    void start_osx ();
-    void start_win ();
+    void start_osx();
+    void start_win();
     // FIXME
-    void start_linux ();
-    void start_generic ();
+    void start_linux();
+    void start_generic();
 
-    void fetch_pulseaudio_version ();
+    void fetch_pulseaudio_version();
 
-    bool find_port (bool search_esd = false);
+    bool find_port(bool search_esd = false);
 
-    bool generate_server_config ();
-    bool generate_client_config ();
+    bool generate_server_config();
+    bool generate_client_config();
 
-    void create_client_dir ();
-    void cleanup_client_dir ();
+    void create_client_dir();
+    void cleanup_client_dir();
 
-    void show_startup_warning (bool play_startup_sound = false);
+    void show_startup_warning(bool play_startup_sound = false);
 
+private slots:
+    void slot_on_pulse_finished(int exit_code);
+    void slot_play_startup_sound();
 
-  private slots:
-    void slot_on_pulse_finished (int exit_code);
-    void slot_play_startup_sound ();
+signals:
+    void sig_pulse_server_terminated();
+    void sig_pulse_user_warning(bool error,
+                                const QString &main_text,
+                                const QString &inf_text,
+                                bool modal);
 
-
-  signals:
-    void sig_pulse_server_terminated ();
-    void sig_pulse_user_warning(bool error, const QString& main_text, const QString& inf_text, bool modal);
-
-
-  private:
+private:
     QString app_dir_;
     QString pulse_X2Go_;
     QDir pulse_dir_;

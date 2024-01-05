@@ -1,99 +1,115 @@
 /**************************************************************************
-*   Copyright (C) 2005-2020 by Oleksandr Shneyder                         *
-*                              <o.shneyder@phoca-gmbh.de>                 *
-*   Copyright (C) 2015-2020 by Mihai Moldovan <ionic@ionic.de>            *
-*                                                                         *
-*   This program is free software; you can redistribute it and/or modify  *
-*   it under the terms of the GNU General Public License as published by  *
-*   the Free Software Foundation; either version 2 of the License, or     *
-*   (at your option) any later version.                                   *
-*   This program is distributed in the hope that it will be useful,       *
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
-*   GNU General Public License for more details.                          *
-*                                                                         *
-*   You should have received a copy of the GNU General Public License     *
-*   along with this program.  If not, see <https://www.gnu.org/licenses/>. *
-***************************************************************************/
+ *   Copyright (C) 2005-2020 by Oleksandr Shneyder                         *
+ *                              <o.shneyder@phoca-gmbh.de>                 *
+ *   Copyright (C) 2015-2020 by Mihai Moldovan <ionic@ionic.de>            *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program.  If not, see <https://www.gnu.org/licenses/>. *
+ ***************************************************************************/
 
-#include <iostream>
-#include <sys/types.h>
+#include <qglobal.h>
+
+#ifdef Q_OS_UNIX
 #include <unistd.h>
-#include <cstring>
-#include <cerrno>
-#include <cstdlib>
-#include <string>
+#endif
+
 #include <algorithm>
 #include <cctype>
-#include <vector>
+#include <cerrno>
 #include <csignal>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <string>
+#include <sys/types.h>
+#include <vector>
 
-#include "unixhelper.h"
-#include "ongetpass.h"
 #include "compat.h"
+#include "ongetpass.h"
+#include "unixhelper.h"
 
-int wrap_x2go_main (int argc, char **argv) {
-  return (x2goMain (argc, argv));
+int wrap_x2go_main(int argc, char **argv)
+{
+    return (x2goMain(argc, argv));
 }
 
 #ifdef Q_OS_UNIX
-int fork_helper (int argc, char **argv) {
-  /* Fork off to start helper process. */
-  pid_t tmp_pid = fork ();
+int fork_helper(int argc, char **argv)
+{
+    /* Fork off to start helper process. */
+    pid_t tmp_pid = fork();
 
-  /* Child. */
-  if (0 == tmp_pid) {
-    /* Starting unixhelper. */
-    std::vector<std::string> new_argv;
-    new_argv.push_back (std::string (argv[0]));
-    new_argv.push_back ("--unixhelper");
+    /* Child. */
+    if (0 == tmp_pid) {
+        /* Starting unixhelper. */
+        std::vector<std::string> new_argv;
+        new_argv.push_back(std::string(argv[0]));
+        new_argv.push_back("--unixhelper");
 
-    std::vector<char *> new_argv_c_str;
-    for (std::vector<std::string>::iterator it = new_argv.begin (); it != new_argv.end (); ++it) {
-      const char *elem = (*it).c_str ();
-      new_argv_c_str.push_back (strndup (elem, std::strlen (elem)));
+        std::vector<char *> new_argv_c_str;
+        for (std::vector<std::string>::iterator it = new_argv.begin(); it != new_argv.end(); ++it) {
+            const char *elem = (*it).c_str();
+            new_argv_c_str.push_back(strndup(elem, std::strlen(elem)));
+        }
+
+        /* Add null pointer as last element. */
+        new_argv_c_str.push_back(0);
+
+        if (0 != execvp(new_argv_c_str.front(), &(new_argv_c_str.front()))) {
+            const int saved_errno = errno;
+            std::cerr << "Failed to re-execute process as UNIX cleanup helper tool: "
+                      << std::strerror(saved_errno) << "\n"
+                      << "Terminating and killing parent."
+                      << "\n"
+                      << "Please report a bug, refer to this documentation: "
+                         "https://wiki.x2go.org/doku.php/wiki:bugs"
+                      << std::Qt::endl;
+
+            pid_t parent_pid = getppid();
+            if (0 != kill(parent_pid, SIGTERM)) {
+                const int saved_errno = errno;
+                std::cerr << "Failed to kill parent process: " << std::strerror(saved_errno)
+                          << std::Qt::endl;
+            }
+
+            std::exit(EXIT_FAILURE);
+        }
+
+        /* Anything here shall be unreachable. */
+        return (0);
     }
-
-    /* Add null pointer as last element. */
-    new_argv_c_str.push_back (0);
-
-    if (0 != execvp (new_argv_c_str.front (), &(new_argv_c_str.front ()))) {
-      const int saved_errno = errno;
-      std::cerr << "Failed to re-execute process as UNIX cleanup helper tool: " << std::strerror (saved_errno) << "\n"
-                << "Terminating and killing parent." << "\n"
-                << "Please report a bug, refer to this documentation: https://wiki.x2go.org/doku.php/wiki:bugs" << std::endl;
-
-      pid_t parent_pid = getppid ();
-      if (0 != kill (parent_pid, SIGTERM)) {
+    /* Error. */
+    else if (-1 == tmp_pid) {
         const int saved_errno = errno;
-        std::cerr << "Failed to kill parent process: " << std::strerror (saved_errno) << std::endl;
-      }
+        std::cerr << "Unable to create a new process for the UNIX cleanup watchdog: "
+                  << std::strerror(saved_errno) << "\n";
+        std::cerr << "Terminating. Please report a bug, refer to this "
+                     "documentation: https://wiki.x2go.org/doku.php/wiki:bugs"
+                  << std::Qt::endl;
 
-      std::exit (EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
-
-    /* Anything here shall be unreachable. */
-    return (0);
-  }
-  /* Error. */
-  else if (-1 == tmp_pid) {
-    const int saved_errno = errno;
-    std::cerr << "Unable to create a new process for the UNIX cleanup watchdog: " << std::strerror (saved_errno) << "\n";
-    std::cerr << "Terminating. Please report a bug, refer to this documentation: https://wiki.x2go.org/doku.php/wiki:bugs" << std::endl;
-
-    std::exit (EXIT_FAILURE);
-  }
-  /* Parent. */
-  else {
-    /* Start real X2Go Client. */
-    return (wrap_x2go_main (argc, argv));
-  }
+    /* Parent. */
+    else {
+        /* Start real X2Go Client. */
+        return (wrap_x2go_main(argc, argv));
+    }
 }
 #endif /* defined (Q_OS_UNIX) */
 
-int main (int argc, char **argv) {
+int main(int argc, char **argv)
+{
 #ifdef Q_OS_UNIX
-  /*
+    /*
    * Flags we don't need a cleanup helper for, since we know that X2Go Client
    * will never spawn other processes.
    *
@@ -106,76 +122,76 @@ int main (int argc, char **argv) {
    *        make the function side-effect free. It should probably be
    *        refactored into a special options parser class.
    */
-  const std::string bypass_flags[] = {
-    "--bypass-cleanup-helper",
-    "--help",
-    "--help-pack",
-    "--version",
-    "-v",
-    "--changelog",
-    "--git-info"
-  };
+    const std::string bypass_flags[] = {"--bypass-cleanup-helper",
+                                        "--help",
+                                        "--help-pack",
+                                        "--version",
+                                        "-v",
+                                        "--changelog",
+                                        "--git-info"};
 
-  bool bypass_unix_helper = 0;
-  bool unix_helper_request = 0;
-  for (int i = 0; i < argc; ++i) {
-    /* No need to continue scanning if we got the information we were looking for. */
-    if ((bypass_unix_helper) && (unix_helper_request)) {
-      break;
-    }
-
-    std::string cur_arg (argv[i]);
-
-    /* Make the current argument lowercase. */
-    std::transform (cur_arg.begin (), cur_arg.end (), cur_arg.begin (), ::tolower);
-
-    if (!(cur_arg.empty ())) {
-      /* Scan program arguments for --unixhelper flag. */
-      if ((!(unix_helper_request)) && (0 == cur_arg.compare ("--unixhelper"))) {
-        unix_helper_request = 1;
-      }
-
-      /* Scan for flags bypassing the unix helper. */
-      if (!(bypass_unix_helper)) {
-        for (std::size_t y = 0; y < (sizeof (bypass_flags) / sizeof (*bypass_flags)); ++y) {
-          if (0 == cur_arg.compare (bypass_flags[y])) {
-            bypass_unix_helper = 1;
-          }
+    bool bypass_unix_helper = 0;
+    bool unix_helper_request = 0;
+    for (int i = 0; i < argc; ++i) {
+        /* No need to continue scanning if we got the information we were looking
+     * for. */
+        if ((bypass_unix_helper) && (unix_helper_request)) {
+            break;
         }
-      }
+
+        std::string cur_arg(argv[i]);
+
+        /* Make the current argument lowercase. */
+        std::transform(cur_arg.begin(), cur_arg.end(), cur_arg.begin(), ::tolower);
+
+        if (!(cur_arg.empty())) {
+            /* Scan program arguments for --unixhelper flag. */
+            if ((!(unix_helper_request)) && (0 == cur_arg.compare("--unixhelper"))) {
+                unix_helper_request = 1;
+            }
+
+            /* Scan for flags bypassing the unix helper. */
+            if (!(bypass_unix_helper)) {
+                for (std::size_t y = 0; y < (sizeof(bypass_flags) / sizeof(*bypass_flags)); ++y) {
+                    if (0 == cur_arg.compare(bypass_flags[y])) {
+                        bypass_unix_helper = 1;
+                    }
+                }
+            }
+        }
     }
-  }
 
-  /* Sanity checks! */
-  if ((unix_helper_request) && (bypass_unix_helper)) {
-    std::cerr << "Re-execution in UNIX cleanup helper mode was requested, but a command line parameter that is supposed to "
-              << "disable the UNIX cleanup helper was found.\n"
-              << "Terminating. Please report a bug, refer to this documentation: https://wiki.x2go.org/doku.php/wiki:bugs" << std::endl;
+    /* Sanity checks! */
+    if ((unix_helper_request) && (bypass_unix_helper)) {
+        std::cerr << "Re-execution in UNIX cleanup helper mode was requested, but "
+                     "a command line parameter that is supposed to "
+                  << "disable the UNIX cleanup helper was found.\n"
+                  << "Terminating. Please report a bug, refer to this "
+                     "documentation: https://wiki.x2go.org/doku.php/wiki:bugs"
+                  << std::Qt::endl;
 
-    return (EXIT_FAILURE);
-  }
-
-  if (bypass_unix_helper) {
-    return (wrap_x2go_main (argc, argv));
-  }
-  else {
-    if (unix_helper_request) {
-      /* We were instructed to start as the UNIX cleanup helper tool. */
-      return (unixhelper::unix_cleanup (getppid ()));
+        return (EXIT_FAILURE);
     }
-    else {
-      /*
+
+    if (bypass_unix_helper) {
+        return (wrap_x2go_main(argc, argv));
+    } else {
+        if (unix_helper_request) {
+            /* We were instructed to start as the UNIX cleanup helper tool. */
+            return (unixhelper::unix_cleanup(getppid()));
+        } else {
+            /*
        * setsid() may succeed and we become a session and process
        * group leader, or it may fail indicating that we already
        * are a process group leader. Either way is fine.
        */
-      setsid ();
+            setsid();
 
-      /* We should be process group leader by now. */
-      return (fork_helper (argc, argv));
+            /* We should be process group leader by now. */
+            return (fork_helper(argc, argv));
+        }
     }
-  }
-#else /* defined (Q_OS_UNIX) */
-  return (wrap_x2go_main (argc, argv));
+#else  /* defined (Q_OS_UNIX) */
+    return (wrap_x2go_main(argc, argv));
 #endif /* defined (Q_OS_UNIX) */
 }

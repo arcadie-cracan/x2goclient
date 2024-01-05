@@ -1,19 +1,19 @@
 /**************************************************************************
-*   Copyright (C) 2005-2020 by Oleksandr Shneyder                         *
-*                              <o.shneyder@phoca-gmbh.de>                 *
-*                                                                         *
-*   This program is free software; you can redistribute it and/or modify  *
-*   it under the terms of the GNU General Public License as published by  *
-*   the Free Software Foundation; either version 2 of the License, or     *
-*   (at your option) any later version.                                   *
-*   This program is distributed in the hope that it will be useful,       *
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
-*   GNU General Public License for more details.                          *
-*                                                                         *
-*   You should have received a copy of the GNU General Public License     *
-*   along with this program.  If not, see <https://www.gnu.org/licenses/>. *
-***************************************************************************/
+ *   Copyright (C) 2005-2020 by Oleksandr Shneyder                         *
+ *                              <o.shneyder@phoca-gmbh.de>                 *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program.  If not, see <https://www.gnu.org/licenses/>. *
+ ***************************************************************************/
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -27,87 +27,76 @@
 #include <QLocale>
 
 #ifdef CFGCLIENT
-#include <onmainwindow.h>
+#include "onmainwindow.h"
 #endif
 
 #ifndef Q_OS_WIN
-#include <sys/types.h>
 #include <signal.h>
+#include <sys/types.h>
 #endif
 
 #if QT_VERSION < 0x050000
 #include <QPlastiqueStyle>
 #endif
-#include <QMessageBox>
-#include <iostream>
 #include <QFile>
-#include <QProcess>
 #include <QLocalSocket>
+#include <QMessageBox>
+#include <QProcess>
 #include "x2gologdebug.h"
+#include <iostream>
 
-
-
-int x2goMain ( int argc, char *argv[] )
+int x2goMain(int argc, char *argv[])
 {
-    QApplication app ( argc,argv );
+    QApplication app(argc, argv);
 
 #ifndef Q_WS_HILDON
 #ifdef Q_OS_LINUX
 #if QT_VERSION < 0x050000
-    app.setStyle ( new QPlastiqueStyle() );
+    app.setStyle(new QPlastiqueStyle());
 #else
-    app.setStyle ("fusion");
+    app.setStyle("fusion");
 #endif
 #endif
 #endif
     QStringList args;
-    if ( argc > 1 )
-        args=app.arguments();
-    if ( args.count() >1 && args[1]=="--dialog" )
-    {
+    if (argc > 1)
+        args = app.arguments();
+    if (args.count() > 1 && args[1] == "--dialog") {
 #ifdef CFGCLIENT
         ONMainWindow::installTranslator();
 #endif
-        QString type=args[2];
-        QString caption=args[4];
-        caption=caption.replace ( "NX","X2Go" );
-        QString text=args[6];
-        if ( type=="error" || type=="panic" )
-            return QMessageBox::critical ( 0, caption,text );
-        if ( type=="ok" )
-            return QMessageBox::information ( 0, caption,text );
-        if ( type=="yesno" )
-        {
-            if(text.indexOf("No response received from the remote server")!=-1 &&
-                    text.indexOf("Do you want to terminate the current session")!=-1)
-            {
-                text=QObject::tr("No response received from the remote server. Do you want to terminate the current session?");
-                int rez=QMessageBox::question ( 0, caption,text,
-                                                QMessageBox::Yes,
-                                                QMessageBox::No );
-                if(rez==QMessageBox::Yes && args.count()>9)
-                {
+        QString type = args[2];
+        QString caption = args[4];
+        caption = caption.replace("NX", "X2Go");
+        QString text = args[6];
+        if (type == "error" || type == "panic")
+            return QMessageBox::critical(0, caption, text);
+        if (type == "ok")
+            return QMessageBox::information(0, caption, text);
+        if (type == "yesno") {
+            if (text.indexOf("No response received from the remote server") != -1
+                && text.indexOf("Do you want to terminate the current session") != -1) {
+                text = QObject::tr("No response received from the remote server. Do "
+                                   "you want to terminate the current session?");
+                int rez = QMessageBox::question(0, caption, text, QMessageBox::Yes, QMessageBox::No);
+                if (rez == QMessageBox::Yes && args.count() > 9) {
 #ifndef Q_OS_WIN
-                    int pid=args[9].toUInt();
+                    int pid = args[9].toUInt();
                     kill(pid, SIGKILL);
 #else
-                    QProcess::execute("bash -c \"kill -9 "+args[9]+"\"");
+                    QProcess::execute("bash", (QStringList() << "-c" << "\"kill -9 " + args[9] + "\""));
 #endif
                 }
                 return rez;
-            }
-            else
-                return  QMessageBox::question ( 0, caption,text,
-                                                QMessageBox::Yes,
-                                                QMessageBox::No );
+            } else
+                return QMessageBox::question(0, caption, text, QMessageBox::Yes, QMessageBox::No);
         }
         return -1;
     }
-
 #ifdef CFGCLIENT
-    else
-    {
-        ONMainWindow* mw = new ONMainWindow;
+    else {
+        ONMainWindow *mw = new ONMainWindow;
+        mw->moveToThread(QApplication::instance()->thread());
         mw->show();
         int retval;
         app.setQuitOnLastWindowClosed(false);
@@ -118,9 +107,3 @@ int x2goMain ( int argc, char *argv[] )
 #endif
     return 0;
 }
-
-
-
-
-
-

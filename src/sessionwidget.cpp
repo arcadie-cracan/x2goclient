@@ -1,357 +1,338 @@
 /**************************************************************************
-*   Copyright (C) 2005-2020 by Oleksandr Shneyder                         *
-*                              <o.shneyder@phoca-gmbh.de>                 *
-*                                                                         *
-*   This program is free software; you can redistribute it and/or modify  *
-*   it under the terms of the GNU General Public License as published by  *
-*   the Free Software Foundation; either version 2 of the License, or     *
-*   (at your option) any later version.                                   *
-*   This program is distributed in the hope that it will be useful,       *
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
-*   GNU General Public License for more details.                          *
-*                                                                         *
-*   You should have received a copy of the GNU General Public License     *
-*   along with this program.  If not, see <https://www.gnu.org/licenses/>. *
-***************************************************************************/
+ *   Copyright (C) 2005-2020 by Oleksandr Shneyder                         *
+ *                              <o.shneyder@phoca-gmbh.de>                 *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program.  If not, see <https://www.gnu.org/licenses/>. *
+ ***************************************************************************/
 
 #include "sessionwidget.h"
-#include "x2goutils.h"
 #include <QBoxLayout>
-#include <QLineEdit>
-#include <QPushButton>
-#include <QLabel>
-#include <QGroupBox>
-#include <QSpinBox>
-#include <QIcon>
-#include <QComboBox>
-#include <QFileDialog>
-#include <QDir>
-#include <QTimer>
-#include <QInputDialog>
-#include <QCheckBox>
-#include "onmainwindow.h"
-#include "x2gosettings.h"
-#include <QMessageBox>
 #include <QButtonGroup>
+#include <QCheckBox>
+#include <QComboBox>
+#include <QDir>
+#include <QFileDialog>
+#include <QGroupBox>
+#include <QIcon>
+#include <QInputDialog>
+#include <QLabel>
+#include <QLineEdit>
+#include <QMessageBox>
+#include <QPushButton>
 #include <QRadioButton>
+#include <QSpinBox>
+#include <QTimer>
 #include "folderexplorer.h"
+#include "onmainwindow.h"
 #include "sessionexplorer.h"
+#include "x2gosettings.h"
+#include "x2goutils.h"
 
-SessionWidget::SessionWidget ( bool newSession, QString id, ONMainWindow * mw,
-                               QWidget * parent, Qt::WindowFlags f )
-    : ConfigWidget ( id,mw,parent,f )
+SessionWidget::SessionWidget(
+    bool newSession, QString id, ONMainWindow *mw, QWidget *parent, Qt::WindowFlags f)
+    : ConfigWidget(id, mw, parent, f)
 {
-    QVBoxLayout* sessLay=new QVBoxLayout ( this );
+    QVBoxLayout *sessLay = new QVBoxLayout(this);
 #ifdef Q_WS_HILDON
-    sessLay->setMargin ( 2 );
+    sessLay->setMargin(2);
 #endif
-    this->parent=mw;
-    this->newSession=newSession;
+    this->parent = mw;
+    this->newSession = newSession;
 
-    sessName=new QLineEdit ( this );
-    icon=new QPushButton ( QString::null,this );
-    if ( !miniMode )
-    {
-        icon->setIconSize ( QSize ( 100,100 ) );
-        icon->setFixedSize ( 100,100 );
+    sessName = new QLineEdit(this);
+    icon = new QPushButton(QString(), this);
+    if (!miniMode) {
+        icon->setIconSize(QSize(100, 100));
+        icon->setFixedSize(100, 100);
+    } else {
+        icon->setIconSize(QSize(48, 48));
+        icon->setFixedSize(48, 48);
     }
-    else
-    {
-        icon->setIconSize ( QSize ( 48,48 ) );
-        icon->setFixedSize ( 48,48 );
-    }
-    icon->setFlat ( true );
+    icon->setFlat(true);
 
-    QHBoxLayout* slay=new QHBoxLayout();
-    slay->addWidget ( new QLabel ( tr ( "Session name:" ),this ) );
-    slay->addWidget ( sessName );
+    QHBoxLayout *slay = new QHBoxLayout();
+    slay->addWidget(new QLabel(tr("Session name:"), this));
+    slay->addWidget(sessName);
 
-    QHBoxLayout* ilay=new QHBoxLayout();
-    ilay->addWidget ( icon );
-    ilay->addWidget ( new QLabel ( tr ( "<< change icon" ),this ) );
+    QHBoxLayout *ilay = new QHBoxLayout();
+    ilay->addWidget(icon);
+    ilay->addWidget(new QLabel(tr("<< change icon"), this));
 
-    lPath=new QLabel(this);
+    lPath = new QLabel(this);
     lPath->setFrameStyle(QFrame::StyledPanel);
-    QPushButton* pathButton=new QPushButton("...",this);
-    QHBoxLayout* pathLay=new QHBoxLayout();
-    pathLay->addWidget(new QLabel(tr("Path:"), this),0);
-    pathLay->addWidget(lPath,1);
-    pathLay->addWidget(pathButton,0);
+    QPushButton *pathButton = new QPushButton("...", this);
+    QHBoxLayout *pathLay = new QHBoxLayout();
+    pathLay->addWidget(new QLabel(tr("Path:"), this), 0);
+    pathLay->addWidget(lPath, 1);
+    pathLay->addWidget(pathButton, 0);
 
 #ifndef Q_WS_HILDON
-    QGroupBox *sgb=new QGroupBox ( tr ( "&Server" ),this );
+    QGroupBox *sgb = new QGroupBox(tr("&Server"), this);
 #else
-    QFrame* sgb=this;
+    QFrame *sgb = this;
 #endif
-    const QString ssh_port_tooltip_text = tr ("Values ranging from <b>0</b> to <b>65535</b> are allowed."
-                                              "<br />A value of <b>0</b> will either use the port specified in the "
-                                              "SSH configuration file belonging to a host or shortname, "
-                                              "or use the default of <b>22</b>.");
-    server=new QLineEdit ( sgb );
-    uname=new QLineEdit ( sgb );
-    sshPort=new QSpinBox ( sgb );
-    sshPort->setValue ( mainWindow->getDefaultSshPort().toInt() );
-    sshPort->setMinimum ( 0 );
-    sshPort->setMaximum ( 65535 );
-    sshPort->setToolTip (ssh_port_tooltip_text);
+    const QString ssh_port_tooltip_text = tr(
+        "Values ranging from <b>0</b> to <b>65535</b> are allowed."
+        "<br />A value of <b>0</b> will either use the port specified in the "
+        "SSH configuration file belonging to a host or shortname, "
+        "or use the default of <b>22</b>.");
+    server = new QLineEdit(sgb);
+    uname = new QLineEdit(sgb);
+    sshPort = new QSpinBox(sgb);
+    sshPort->setValue(mainWindow->getDefaultSshPort().toInt());
+    sshPort->setMinimum(0);
+    sshPort->setMaximum(65535);
+    sshPort->setToolTip(ssh_port_tooltip_text);
 #ifdef Q_OS_LINUX
-    rdpPort=new QSpinBox ( sgb );
-    rdpPort->setValue ( mainWindow->getDefaultSshPort().toInt() );
-    rdpPort->setMinimum ( 0 );
-    rdpPort->setMaximum ( 65535 );
-    rdpPort->setToolTip (ssh_port_tooltip_text);
+    rdpPort = new QSpinBox(sgb);
+    rdpPort->setValue(mainWindow->getDefaultSshPort().toInt());
+    rdpPort->setMinimum(0);
+    rdpPort->setMaximum(65535);
+    rdpPort->setToolTip(ssh_port_tooltip_text);
 #endif
-    key=new QLineEdit ( sgb );
+    key = new QLineEdit(sgb);
 
 #ifndef Q_WS_HILDON
-    openKey=new QPushButton (
-        QIcon ( mainWindow->iconsPath (
-                    "/32x32/file-open.png" ) ),
-        QString::null,sgb );
-    QVBoxLayout *sgbLay = new QVBoxLayout ( sgb );
+    openKey = new QPushButton(QIcon(mainWindow->iconsPath("/32x32/file-open.png")), QString(), sgb);
+    QVBoxLayout *sgbLay = new QVBoxLayout(sgb);
 #else
-    QPushButton* openKey=new QPushButton (
-        QIcon ( mainWindow->iconsPath ( "/16x16/file-open.png" ) ),
-        QString::null,sgb );
-    QVBoxLayout *sgbLay = new QVBoxLayout ();
+    QPushButton *openKey = new QPushButton(QIcon(mainWindow->iconsPath("/16x16/file-open.png")),
+                                           QString(),
+                                           sgb);
+    QVBoxLayout *sgbLay = new QVBoxLayout();
 #endif
-    QHBoxLayout *suLay =new QHBoxLayout();
-    QVBoxLayout *slLay =new QVBoxLayout();
-    QVBoxLayout *elLay =new QVBoxLayout();
-    slLay->addWidget ( new QLabel ( tr ( "Host:" ),sgb ) );
-    lLogin= new QLabel ( tr ( "Login:" ),sgb );
-    slLay->addWidget (lLogin );
-    lPort=new QLabel ( tr ( "SSH port:" ),sgb );
-    slLay->addWidget ( lPort );
-    elLay->addWidget ( server );
-    elLay->addWidget ( uname );
-    elLay->addWidget ( sshPort );
+    QHBoxLayout *suLay = new QHBoxLayout();
+    QVBoxLayout *slLay = new QVBoxLayout();
+    QVBoxLayout *elLay = new QVBoxLayout();
+    slLay->addWidget(new QLabel(tr("Host:"), sgb));
+    lLogin = new QLabel(tr("Login:"), sgb);
+    slLay->addWidget(lLogin);
+    lPort = new QLabel(tr("SSH port:"), sgb);
+    slLay->addWidget(lPort);
+    elLay->addWidget(server);
+    elLay->addWidget(uname);
+    elLay->addWidget(sshPort);
 #ifdef Q_OS_LINUX
-    elLay->addWidget ( rdpPort );
+    elLay->addWidget(rdpPort);
 #endif
-    suLay->addLayout ( slLay );
-    suLay->addLayout ( elLay );
+    suLay->addLayout(slLay);
+    suLay->addLayout(elLay);
 #ifdef Q_WS_HILDON
-    sshPort->setFixedHeight ( int ( sshPort->sizeHint().height() *1.5 ) );
+    sshPort->setFixedHeight(int(sshPort->sizeHint().height() * 1.5));
 #endif
 
-    QHBoxLayout *keyLay =new QHBoxLayout();
-    lKey=new QLabel ( tr ( "Use RSA/DSA key for ssh connection:" ),sgb );
-    keyLay->addWidget (lKey );
-    keyLay->addWidget ( key );
-    keyLay->addWidget ( openKey );
+    QHBoxLayout *keyLay = new QHBoxLayout();
+    lKey = new QLabel(tr("Use RSA/DSA key for ssh connection:"), sgb);
+    keyLay->addWidget(lKey);
+    keyLay->addWidget(key);
+    keyLay->addWidget(openKey);
 
-    sgbLay->addLayout ( suLay );
-    sgbLay->addLayout ( keyLay );
-    cbAutoLogin=new QCheckBox(tr("Try auto login (via SSH Agent or default SSH key)"),sgb);
-    cbKrbLogin=new QCheckBox(tr("Kerberos 5 (GSSAPI) authentication"),sgb);
-    cbKrbDelegation=new QCheckBox(tr("Delegation of GSSAPI credentials to the server"),sgb);
+    sgbLay->addLayout(suLay);
+    sgbLay->addLayout(keyLay);
+    cbAutoLogin = new QCheckBox(tr("Try auto login (via SSH Agent or default SSH key)"), sgb);
+    cbKrbLogin = new QCheckBox(tr("Kerberos 5 (GSSAPI) authentication"), sgb);
+    cbKrbDelegation = new QCheckBox(tr("Delegation of GSSAPI credentials to the server"), sgb);
     sgbLay->addWidget(cbAutoLogin);
     sgbLay->addWidget(cbKrbLogin);
     sgbLay->addWidget(cbKrbDelegation);
-    cbProxy=new QCheckBox(tr("Use Proxy server for SSH connection"),sgb);
-    proxyBox=new QGroupBox(tr("Proxy server"),sgb);
+    cbProxy = new QCheckBox(tr("Use Proxy server for SSH connection"), sgb);
+    proxyBox = new QGroupBox(tr("Proxy server"), sgb);
     sgbLay->addWidget(cbProxy);
     sgbLay->addWidget(proxyBox);
-    QGridLayout* proxyLaout=new QGridLayout(proxyBox);
-    QButtonGroup* proxyType=new QButtonGroup(proxyBox);
+    QGridLayout *proxyLaout = new QGridLayout(proxyBox);
+    QButtonGroup *proxyType = new QButtonGroup(proxyBox);
     proxyType->setExclusive(true);
-    rbSshProxy=new QRadioButton(tr("SSH"),proxyBox);
-    rbHttpProxy=new QRadioButton(tr("HTTP"),proxyBox);
+    rbSshProxy = new QRadioButton(tr("SSH"), proxyBox);
+    rbHttpProxy = new QRadioButton(tr("HTTP"), proxyBox);
     proxyType->addButton(rbSshProxy);
     proxyType->addButton(rbHttpProxy);
-    proxyHost=new QLineEdit(proxyBox);
-    proxyPort=new QSpinBox(proxyBox);
-    proxyPort->setMinimum ( 0 );
-    proxyPort->setMaximum ( 65535 );
-    proxyPort->setToolTip (ssh_port_tooltip_text);
+    proxyHost = new QLineEdit(proxyBox);
+    proxyPort = new QSpinBox(proxyBox);
+    proxyPort->setMinimum(0);
+    proxyPort->setMaximum(65535);
+    proxyPort->setToolTip(ssh_port_tooltip_text);
 
-    cbProxySameUser=new QCheckBox(tr("Same login as on X2Go Server"), proxyBox);
-    proxyLogin=new QLineEdit(proxyBox);
-    cbProxySamePass=new QCheckBox(tr("Same password as on X2Go Server"), proxyBox);
+    cbProxySameUser = new QCheckBox(tr("Same login as on X2Go Server"), proxyBox);
+    proxyLogin = new QLineEdit(proxyBox);
+    cbProxySamePass = new QCheckBox(tr("Same password as on X2Go Server"), proxyBox);
 
-    proxyKeyLabel=new QLabel( tr ( "RSA/DSA key:" ), proxyBox);
-    proxyKey=new QLineEdit(proxyBox);
-    pbOpenProxyKey=new QPushButton (
-        QIcon ( mainWindow->iconsPath ( "/16x16/file-open.png" ) ),
-        QString::null,proxyBox );
-    cbProxyAutologin=new QCheckBox(tr("SSH Agent or default SSH key"),proxyBox);
-    cbProxyKrbLogin=new QCheckBox(tr("Kerberos 5 (GSSAPI) authentication"),proxyBox);
+    proxyKeyLabel = new QLabel(tr("RSA/DSA key:"), proxyBox);
+    proxyKey = new QLineEdit(proxyBox);
+    pbOpenProxyKey = new QPushButton(QIcon(mainWindow->iconsPath("/16x16/file-open.png")),
+                                     QString(),
+                                     proxyBox);
+    cbProxyAutologin = new QCheckBox(tr("SSH Agent or default SSH key"), proxyBox);
+    cbProxyKrbLogin = new QCheckBox(tr("Kerberos 5 (GSSAPI) authentication"), proxyBox);
 
+    proxyLaout->addWidget(new QLabel(tr("Type:"), proxyBox), 0, 0, 1, 2);
+    proxyLaout->addWidget(rbSshProxy, 1, 0, 1, 2);
+    proxyLaout->addWidget(rbHttpProxy, 2, 0, 1, 2);
+    proxyLaout->addWidget(new QLabel(tr("Host:"), proxyBox), 3, 0);
+    proxyLaout->addWidget(new QLabel(tr("Port:"), proxyBox), 4, 0);
+    proxyLaout->addWidget(proxyHost, 3, 1);
+    proxyLaout->addWidget(proxyPort, 4, 1);
 
-    proxyLaout->addWidget(new QLabel(tr("Type:"),proxyBox),0,0,1,2);
-    proxyLaout->addWidget(rbSshProxy,1,0,1,2);
-    proxyLaout->addWidget(rbHttpProxy,2,0,1,2);
-    proxyLaout->addWidget(new QLabel(tr("Host:"),proxyBox),3,0);
-    proxyLaout->addWidget(new QLabel(tr("Port:"),proxyBox),4,0);
-    proxyLaout->addWidget(proxyHost,3,1);
-    proxyLaout->addWidget(proxyPort,4,1);
-
-    proxyLaout->addWidget(cbProxySameUser,0,3,1,3);
-    proxyLaout->addWidget(lProxyLogin=new QLabel(tr("Login:"),proxyBox),1,3,1,1);
-    proxyLaout->addWidget(proxyLogin,1,4,1,2);
-    proxyLaout->addWidget(cbProxySamePass,2,3,1,3);
-    proxyLaout->addWidget(proxyKeyLabel,3,3,1,1);
-    proxyLaout->addWidget(proxyKey,3,4,1,1);
-    proxyLaout->addWidget(pbOpenProxyKey,3,5,1,1);
-    proxyLaout->addWidget(cbProxyAutologin,4,3,1,3);
-    proxyLaout->addWidget(cbProxyKrbLogin,5,3,1,3);
-
+    proxyLaout->addWidget(cbProxySameUser, 0, 3, 1, 3);
+    proxyLaout->addWidget(lProxyLogin = new QLabel(tr("Login:"), proxyBox), 1, 3, 1, 1);
+    proxyLaout->addWidget(proxyLogin, 1, 4, 1, 2);
+    proxyLaout->addWidget(cbProxySamePass, 2, 3, 1, 3);
+    proxyLaout->addWidget(proxyKeyLabel, 3, 3, 1, 1);
+    proxyLaout->addWidget(proxyKey, 3, 4, 1, 1);
+    proxyLaout->addWidget(pbOpenProxyKey, 3, 5, 1, 1);
+    proxyLaout->addWidget(cbProxyAutologin, 4, 3, 1, 3);
+    proxyLaout->addWidget(cbProxyKrbLogin, 5, 3, 1, 3);
 
 #ifndef Q_WS_HILDON
-    QGroupBox *deskSess=new QGroupBox ( tr ( "&Session type" ),this );
-    QGridLayout* cmdLay=new QGridLayout ( deskSess );
+    QGroupBox *deskSess = new QGroupBox(tr("&Session type"), this);
+    QGridLayout *cmdLay = new QGridLayout(deskSess);
 #else
-    QFrame* deskSess=this;
-    QHBoxLayout* cmdLay=new QHBoxLayout ();
-    cmdLay->addWidget ( new QLabel ( tr ( "Session type:" ),this ) );
+    QFrame *deskSess = this;
+    QHBoxLayout *cmdLay = new QHBoxLayout();
+    cmdLay->addWidget(new QLabel(tr("Session type:"), this));
 #endif
-    cbKdrive=new QCheckBox(tr("Run in X2GoKDrive (experimental)"));
-    sessBox=new QComboBox ( deskSess );
-    cmd=new QLineEdit ( deskSess );
-    cmdCombo=new QComboBox ( deskSess );
-    cmdCombo->setEditable ( true );
-    sessBox->addItem ( "KDE" );
-    sessBox->addItem ( "GNOME" );
-    sessBox->addItem ( "LXDE" );
-    sessBox->addItem ("LXQt");
-    sessBox->addItem ( "XFCE" );
-    sessBox->addItem ( "MATE" );
-    sessBox->addItem ( "UNITY" );
-    sessBox->addItem ( "CINNAMON" );
-    sessBox->addItem ( "TRINITY" );
-    sessBox->addItem ( "OPENBOX" );
-    sessBox->addItem ( "ICEWM" );
-    sessBox->addItem ( tr ( "Connect to Windows Terminal Server" ) );
-    sessBox->addItem ( tr ( "XDMCP" ) );
-    sessBox->addItem ( tr ( "X2Go/X11 Desktop Sharing" ) );
-    sessBox->addItem ( tr ( "Custom desktop" ) );
-    sessBox->addItem ( tr ( "Single application" ) );
-    sessBox->addItem ( tr ( "Published applications" ) );
-    cmdLay->addWidget ( cbKdrive,0,1,Qt::AlignLeft );
-    cmdLay->addWidget ( sessBox,1,1,Qt::AlignLeft );
-    leCmdIp=new QLabel ( tr ( "Command:" ),deskSess );
-    pbAdvanced=new QPushButton ( tr ( "Advanced options..." ),deskSess );
-    cmdLay->addWidget ( leCmdIp,1,2 );
-    cmdLay->setColumnStretch(6,1);
-    cmdLay->addWidget ( cmd ,1,3);
-    cmdLay->addWidget ( cmdCombo,1,4 );
-    cmdLay->addWidget ( pbAdvanced ,1,5);
-    cmdCombo->setSizePolicy ( QSizePolicy::Expanding,
-                              QSizePolicy::Preferred );
+    cbKdrive = new QCheckBox(tr("Run in X2GoKDrive (experimental)"));
+    sessBox = new QComboBox(deskSess);
+    cmd = new QLineEdit(deskSess);
+    cmdCombo = new QComboBox(deskSess);
+    cmdCombo->setEditable(true);
+    sessBox->addItem("KDE");
+    sessBox->addItem("GNOME");
+    sessBox->addItem("LXDE");
+    sessBox->addItem("LXQt");
+    sessBox->addItem("XFCE");
+    sessBox->addItem("MATE");
+    sessBox->addItem("UNITY");
+    sessBox->addItem("CINNAMON");
+    sessBox->addItem("TRINITY");
+    sessBox->addItem("OPENBOX");
+    sessBox->addItem("ICEWM");
+    sessBox->addItem(tr("Connect to Windows Terminal Server"));
+    sessBox->addItem(tr("XDMCP"));
+    sessBox->addItem(tr("X2Go/X11 Desktop Sharing"));
+    sessBox->addItem(tr("Custom desktop"));
+    sessBox->addItem(tr("Single application"));
+    sessBox->addItem(tr("Published applications"));
+    cmdLay->addWidget(cbKdrive, 0, 1, Qt::AlignLeft);
+    cmdLay->addWidget(sessBox, 1, 1, Qt::AlignLeft);
+    leCmdIp = new QLabel(tr("Command:"), deskSess);
+    pbAdvanced = new QPushButton(tr("Advanced options..."), deskSess);
+    cmdLay->addWidget(leCmdIp, 1, 2);
+    cmdLay->setColumnStretch(6, 1);
+    cmdLay->addWidget(cmd, 1, 3);
+    cmdLay->addWidget(cmdCombo, 1, 4);
+    cmdLay->addWidget(pbAdvanced, 1, 5);
+    cmdCombo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     cmdCombo->hide();
     pbAdvanced->hide();
-    cmdCombo->addItem ( "" );
-    cmdCombo->addItems ( mainWindow->transApplicationsNames() );
-    cmdCombo->lineEdit()->setText ( tr ( "Path to executable" ) );
+    cmdCombo->addItem("");
+    cmdCombo->addItems(mainWindow->transApplicationsNames());
+    cmdCombo->lineEdit()->setText(tr("Path to executable"));
     cmdCombo->lineEdit()->selectAll();
 #ifndef Q_WS_HILDON
-    sessLay->addLayout ( slay );
-    sessLay->addLayout ( ilay );
-    sessLay->addLayout ( pathLay );
-    if ( !miniMode )
-        sessLay->addSpacing ( 15 );
-    sessLay->addWidget ( sgb );
-    sessLay->addWidget ( deskSess );
+    sessLay->addLayout(slay);
+    sessLay->addLayout(ilay);
+    sessLay->addLayout(pathLay);
+    if (!miniMode)
+        sessLay->addSpacing(15);
+    sessLay->addWidget(sgb);
+    sessLay->addWidget(deskSess);
 #ifdef Q_OS_LINUX
-    cbDirectRDP=new QCheckBox(tr("Direct RDP connection"), deskSess);
-    cmdLay->addWidget(cbDirectRDP,2,0,1,6);
+    cbDirectRDP = new QCheckBox(tr("Direct RDP connection"), deskSess);
+    cmdLay->addWidget(cbDirectRDP, 2, 0, 1, 6);
     cbDirectRDP->hide();
-    connect(cbDirectRDP,SIGNAL(clicked()), this, SLOT(slot_rdpDirectClicked()));
+    connect(cbDirectRDP, SIGNAL(clicked()), this, SLOT(slot_rdpDirectClicked()));
 #endif
 
 #else
-    QVBoxLayout* sHildILay = new QVBoxLayout();
-    sHildILay->addLayout ( slay );
-    sHildILay->addLayout ( ilay );
+    QVBoxLayout *sHildILay = new QVBoxLayout();
+    sHildILay->addLayout(slay);
+    sHildILay->addLayout(ilay);
     sHildILay->addStretch();
-    QHBoxLayout* sHildLay = new QHBoxLayout();
-    sHildLay->addLayout ( sHildILay );
+    QHBoxLayout *sHildLay = new QHBoxLayout();
+    sHildLay->addLayout(sHildILay);
 
-    QFrame* vl=new QFrame;
-    vl->setLineWidth ( 0 );
-    vl->setFrameStyle ( QFrame::VLine|QFrame::Plain );
-    sHildLay->addWidget ( vl );
-    sHildLay->setSpacing ( 6 );
-    sHildLay->addLayout ( sgbLay );
-    sessLay->addLayout ( sHildLay );
+    QFrame *vl = new QFrame;
+    vl->setLineWidth(0);
+    vl->setFrameStyle(QFrame::VLine | QFrame::Plain);
+    sHildLay->addWidget(vl);
+    sHildLay->setSpacing(6);
+    sHildLay->addLayout(sgbLay);
+    sessLay->addLayout(sHildLay);
     sessLay->addStretch();
-    sessLay->addLayout ( cmdLay );
+    sessLay->addLayout(cmdLay);
 #endif
     sessLay->addStretch();
 
-    connect ( icon,SIGNAL ( clicked() ),this,SLOT ( slot_getIcon() ) );
-    connect ( openKey,SIGNAL ( clicked() ),this,SLOT ( slot_getKey() ) );
-    connect ( pbAdvanced,SIGNAL ( clicked() ),this,
-              SLOT ( slot_rdpOptions() ) );
-    connect ( sessBox,SIGNAL ( activated ( int ) ),this,
-              SLOT ( slot_changeCmd ( int ) ) );
-    connect ( sessName,SIGNAL ( textChanged ( const QString & ) ),this,
-              SIGNAL ( nameChanged ( const QString & ) ) );
-    connect (server, SIGNAL(textChanged(const QString&)),this, SLOT(slot_emitSettings()));
-    connect (uname, SIGNAL(textChanged(const QString&)),this, SLOT(slot_emitSettings()));
-    connect (cbKrbLogin, SIGNAL(clicked(bool)), this, SLOT(slot_krbChecked()));
+    connect(icon, SIGNAL(clicked()), this, SLOT(slot_getIcon()));
+    connect(openKey, SIGNAL(clicked()), this, SLOT(slot_getKey()));
+    connect(pbAdvanced, SIGNAL(clicked()), this, SLOT(slot_rdpOptions()));
+    connect(sessBox, SIGNAL(activated(int)), this, SLOT(slot_changeCmd(int)));
+    connect(sessName,
+            SIGNAL(textChanged(const QString &)),
+            this,
+            SIGNAL(nameChanged(const QString &)));
+    connect(server, SIGNAL(textChanged(const QString &)), this, SLOT(slot_emitSettings()));
+    connect(uname, SIGNAL(textChanged(const QString &)), this, SLOT(slot_emitSettings()));
+    connect(cbKrbLogin, SIGNAL(clicked(bool)), this, SLOT(slot_krbChecked()));
 #ifdef Q_OS_LINUX
-    connect (rdpPort, SIGNAL(valueChanged(int)),this, SLOT(slot_emitSettings()));
+    connect(rdpPort, SIGNAL(valueChanged(int)), this, SLOT(slot_emitSettings()));
 #endif
 
-    connect ( pbOpenProxyKey,SIGNAL ( clicked() ),this,SLOT ( slot_proxyGetKey()) );
-    connect ( proxyType, SIGNAL ( buttonClicked(int)) ,this,SLOT ( slot_proxyType()));
-    connect (cbProxy, SIGNAL(clicked(bool)), this, SLOT(slot_proxyOptions()));
-    connect (cbProxySameUser, SIGNAL(clicked(bool)), this, SLOT(slot_proxySameLogin()));
-    connect ( pathButton, SIGNAL(clicked(bool)), this, SLOT(slot_openFolder()));
+    connect(pbOpenProxyKey, SIGNAL(clicked()), this, SLOT(slot_proxyGetKey()));
+    connect(proxyType, SIGNAL(buttonClicked(int)), this, SLOT(slot_proxyType()));
+    connect(cbProxy, SIGNAL(clicked(bool)), this, SLOT(slot_proxyOptions()));
+    connect(cbProxySameUser, SIGNAL(clicked(bool)), this, SLOT(slot_proxySameLogin()));
+    connect(pathButton, SIGNAL(clicked(bool)), this, SLOT(slot_openFolder()));
 
     readConfig();
 }
 
-
-SessionWidget::~SessionWidget()
-{
-}
+SessionWidget::~SessionWidget() {}
 
 void SessionWidget::slot_proxyGetKey()
 {
     QString path;
-    QString startDir=ONMainWindow::getHomeDirectory();
+    QString startDir = ONMainWindow::getHomeDirectory();
 #ifdef Q_OS_WIN
-    if ( ONMainWindow::getPortable() &&
-            ONMainWindow::U3DevicePath().length() >0 )
-    {
-        startDir=ONMainWindow::U3DevicePath() +"/";
+    if (ONMainWindow::getPortable() && ONMainWindow::U3DevicePath().length() > 0) {
+        startDir = ONMainWindow::U3DevicePath() + "/";
     }
 #endif
-    path = QFileDialog::getOpenFileName (
-               this,
-               tr ( "Open key file" ),
-               startDir,
-               tr ( "All files" ) +" (*)" );
-    if ( path!=QString::null )
-    {
+    path = QFileDialog::getOpenFileName(this,
+                                        tr("Open key file"),
+                                        startDir,
+                                        tr("All files") + " (*)");
+    if (path != QString()) {
 #ifdef Q_OS_WIN
-        if ( ONMainWindow::getPortable() &&
-                ONMainWindow::U3DevicePath().length() >0 )
-        {
-            if ( path.indexOf ( ONMainWindow::U3DevicePath() ) !=0 )
-            {
-                QMessageBox::critical (
-                    0l,tr ( "Error" ),
-                    tr ( "X2Go Client is running in "
-                         "portable mode. You should "
-                         "use a path on your USB device "
-                         "to be able to access your data "
-                         "wherever you are." ),
-                    QMessageBox::Ok,QMessageBox::NoButton );
+        if (ONMainWindow::getPortable() && ONMainWindow::U3DevicePath().length() > 0) {
+            if (path.indexOf(ONMainWindow::U3DevicePath()) != 0) {
+                QMessageBox::critical(0l,
+                                      tr("Error"),
+                                      tr("X2Go Client is running in "
+                                         "portable mode. You should "
+                                         "use a path on your USB device "
+                                         "to be able to access your data "
+                                         "wherever you are."),
+                                      QMessageBox::Ok,
+                                      QMessageBox::NoButton);
                 slot_getKey();
                 return;
             }
-            path.replace ( ONMainWindow::U3DevicePath(),
-                           "(U3)" );
+            path.replace(ONMainWindow::U3DevicePath(), "(U3)");
         }
 #endif
-        proxyKey->setText ( path );
+        proxyKey->setText(path);
     }
-
 }
 
 void SessionWidget::slot_proxyOptions()
@@ -367,7 +348,7 @@ void SessionWidget::slot_proxySameLogin()
 
 void SessionWidget::slot_proxyType()
 {
-    bool isSsh=rbSshProxy->isChecked();
+    bool isSsh = rbSshProxy->isChecked();
     cbProxyAutologin->setVisible(isSsh);
     cbProxyKrbLogin->setVisible(isSsh);
     proxyKey->setVisible(isSsh);
@@ -375,24 +356,20 @@ void SessionWidget::slot_proxyType()
     pbOpenProxyKey->setVisible(isSsh);
 }
 
-
 #ifdef Q_OS_LINUX
 void SessionWidget::slot_rdpDirectClicked()
 {
-    bool isDirectRDP=cbDirectRDP->isChecked();
-    bool isXDMCP=false;
-    if(sessBox->currentText()== tr("XDMCP"))
-    {
-        cbDirectRDP->setText( tr("Direct XDMCP connection"));
-        isXDMCP=true;
-    }
-    else
-    {
-        cbDirectRDP->setText( tr("Direct RDP connection"));
+    bool isDirectRDP = cbDirectRDP->isChecked();
+    bool isXDMCP = false;
+    if (sessBox->currentText() == tr("XDMCP")) {
+        cbDirectRDP->setText(tr("Direct XDMCP connection"));
+        isXDMCP = true;
+    } else {
+        cbDirectRDP->setText(tr("Direct RDP connection"));
     }
     if (cbDirectRDP->isHidden())
-        isDirectRDP=false;
-    pbAdvanced->setVisible((!isDirectRDP) && (sessBox->currentIndex()==RDP));
+        isDirectRDP = false;
+    pbAdvanced->setVisible((!isDirectRDP) && (sessBox->currentIndex() == RDP));
     leCmdIp->setVisible(!isDirectRDP);
     cmd->setVisible(!isDirectRDP);
     key->setVisible(!isDirectRDP);
@@ -409,17 +386,13 @@ void SessionWidget::slot_rdpDirectClicked()
     cbProxy->setVisible(!isDirectRDP);
     proxyBox->setVisible(!isDirectRDP && cbProxy->isChecked());
 
-    if (isDirectRDP)
-    {
+    if (isDirectRDP) {
         lPort->setText(tr("RDP port:"));
-    }
-    else
-    {
+    } else {
         lPort->setText(tr("SSH port:"));
     }
-    lLogin->setVisible(!(isXDMCP&&isDirectRDP));
-    uname->setVisible(!(isXDMCP&&isDirectRDP));
-
+    lLogin->setVisible(!(isXDMCP && isDirectRDP));
+    uname->setVisible(!(isXDMCP && isDirectRDP));
 
     emit directRDP(isDirectRDP, isXDMCP);
     slot_emitSettings();
@@ -428,112 +401,94 @@ void SessionWidget::slot_rdpDirectClicked()
 
 void SessionWidget::slot_getIcon()
 {
-    QString path= QFileDialog::getOpenFileName (
-                      this,
-                      tr ( "Open picture" ),
-                      QDir::homePath(),
-                      tr ( "Pictures" ) +" (*.png *.xpm *.jpg)" );
-    if ( path!=QString::null )
-    {
-        sessIcon = wrap_legacy_resource_URIs (path);
-        icon->setIcon ( QIcon ( sessIcon ) );
+    QString path = QFileDialog::getOpenFileName(this,
+                                                tr("Open picture"),
+                                                QDir::homePath(),
+                                                tr("Pictures") + " (*.png *.xpm *.jpg)");
+    if (path != QString()) {
+        sessIcon = wrap_legacy_resource_URIs(path);
+        icon->setIcon(QIcon(sessIcon));
     }
 }
 
 void SessionWidget::slot_getKey()
 {
     QString path;
-    QString startDir=ONMainWindow::getHomeDirectory();
+    QString startDir = ONMainWindow::getHomeDirectory();
 #ifdef Q_OS_WIN
-    if ( ONMainWindow::getPortable() &&
-            ONMainWindow::U3DevicePath().length() >0 )
-    {
-        startDir=ONMainWindow::U3DevicePath() +"/";
+    if (ONMainWindow::getPortable() && ONMainWindow::U3DevicePath().length() > 0) {
+        startDir = ONMainWindow::U3DevicePath() + "/";
     }
 #endif
-    path = QFileDialog::getOpenFileName (
-               this,
-               tr ( "Open key file" ),
-               startDir,
-               tr ( "All files" ) +" (*)" );
-    if ( path!=QString::null )
-    {
+    path = QFileDialog::getOpenFileName(this,
+                                        tr("Open key file"),
+                                        startDir,
+                                        tr("All files") + " (*)");
+    if (path != QString()) {
 #ifdef Q_OS_WIN
-        if ( ONMainWindow::getPortable() &&
-                ONMainWindow::U3DevicePath().length() >0 )
-        {
-            if ( path.indexOf ( ONMainWindow::U3DevicePath() ) !=0 )
-            {
-                QMessageBox::critical (
-                    0l,tr ( "Error" ),
-                    tr ( "X2Go Client is running in "
-                         "portable mode. You should "
-                         "use a path on your USB device "
-                         "to be able to access your data "
-                         "wherever you are." ),
-                    QMessageBox::Ok,QMessageBox::NoButton );
+        if (ONMainWindow::getPortable() && ONMainWindow::U3DevicePath().length() > 0) {
+            if (path.indexOf(ONMainWindow::U3DevicePath()) != 0) {
+                QMessageBox::critical(0l,
+                                      tr("Error"),
+                                      tr("X2Go Client is running in "
+                                         "portable mode. You should "
+                                         "use a path on your USB device "
+                                         "to be able to access your data "
+                                         "wherever you are."),
+                                      QMessageBox::Ok,
+                                      QMessageBox::NoButton);
                 slot_getKey();
                 return;
             }
-            path.replace ( ONMainWindow::U3DevicePath(),
-                           "(U3)" );
+            path.replace(ONMainWindow::U3DevicePath(), "(U3)");
         }
 #endif
-        key->setText ( path );
+        key->setText(path);
     }
 }
 
-
-void SessionWidget::slot_changeCmd ( int var )
+void SessionWidget::slot_changeCmd(int var)
 {
-    leCmdIp->setText ( tr ( "Command:" ) );
+    leCmdIp->setText(tr("Command:"));
     pbAdvanced->hide();
 #ifdef Q_OS_LINUX
     cbDirectRDP->hide();
 #endif
     leCmdIp->show();
     cmd->show();
-    if ( var==APPLICATION )
-    {
+    if (var == APPLICATION) {
         cmd->hide();
-        cmdCombo->setVisible ( true );
+        cmdCombo->setVisible(true);
         cmdCombo->setEnabled(true);
         cmdCombo->lineEdit()->selectAll();
         cmdCombo->lineEdit()->setFocus();
-    }
-    else
-    {
+    } else {
         cmdCombo->hide();
-        cmd->setVisible ( true );
-        if ( var==OTHER || var == RDP || var == XDMCP )
-        {
-            cmd->setText ( "" );
-            cmd->setEnabled ( true );
+        cmd->setVisible(true);
+        if (var == OTHER || var == RDP || var == XDMCP) {
+            cmd->setText("");
+            cmd->setEnabled(true);
             cmd->selectAll();
             cmd->setFocus();
-            if ( var==RDP )
-            {
-                leCmdIp->setText ( tr ( "Server:" ) );
+            if (var == RDP) {
+                leCmdIp->setText(tr("Server:"));
                 pbAdvanced->show();
-                cmd->setText ( rdpServer );
+                cmd->setText(rdpServer);
 #ifdef Q_OS_LINUX
                 cbDirectRDP->show();
 #endif
             }
-            if ( var== XDMCP )
-            {
-                leCmdIp->setText ( tr ( "XDMCP server:" ) );
-                cmd->setText ( xdmcpServer );
+            if (var == XDMCP) {
+                leCmdIp->setText(tr("XDMCP server:"));
+                cmd->setText(xdmcpServer);
 #ifdef Q_OS_LINUX
                 cbDirectRDP->show();
-                cbDirectRDP->setText(tr ("direct XDMCP connection"));
+                cbDirectRDP->setText(tr("direct XDMCP connection"));
 #endif
             }
-        }
-        else
-        {
-            cmd->setEnabled ( false );
-            cmd->setText ( "" );
+        } else {
+            cmd->setEnabled(false);
+            cmd->setText("");
         }
     }
 #ifdef Q_OS_LINUX
@@ -544,265 +499,192 @@ void SessionWidget::slot_changeCmd ( int var )
 void SessionWidget::slot_rdpOptions()
 {
     bool ok;
-    QString text = QInputDialog::getText (
-                       this,
-                       tr ( "Connect to Windows Terminal Server" ),
-                       tr ( "rdesktop command line options:" ),
-                       QLineEdit::Normal,
-                       rdpOptions, &ok );
-    rdpOptions= text;
+    QString text = QInputDialog::getText(this,
+                                         tr("Connect to Windows Terminal Server"),
+                                         tr("rdesktop command line options:"),
+                                         QLineEdit::Normal,
+                                         rdpOptions,
+                                         &ok);
+    rdpOptions = text;
 }
 
 void SessionWidget::readConfig()
 {
+    X2goSettings st("sessions");
+    QString name = st.setting()
+                       ->value(sessionId + "/name", (QVariant) tr("New session"))
+                       .toString()
+                       .trimmed();
 
-    X2goSettings st ( "sessions" );
-    QString name=st.setting()->value (
-                     sessionId+"/name",
-                     ( QVariant ) tr ( "New session" ) ).toString().trimmed();
-
-    QStringList tails=name.split("/",QString::SkipEmptyParts);
+    QStringList tails = name.split("/", Qt::SkipEmptyParts);
     QString path;
-    if(tails.count()>0)
-    {
-        name=tails.last();
+    if (tails.count() > 0) {
+        name = tails.last();
         tails.pop_back();
-        path=tails.join("/")+"/";
+        path = tails.join("/") + "/";
     }
     lPath->setText(path);
-    if(newSession)
-        lPath->setText(parent->getSessionExplorer()->getCurrentPath()+"/");
+    if (newSession)
+        lPath->setText(parent->getSessionExplorer()->getCurrentPath() + "/");
 
-    sessName->setText (name);
+    sessName->setText(name);
 
-    sessIcon = wrap_legacy_resource_URIs (st.setting ()->value (sessionId+"/icon",
-                                                                (QVariant) parent->iconsPath("/128x128/x2gosession.png")
-                                                               ).toString ().trimmed ());
+    sessIcon = wrap_legacy_resource_URIs(
+        st.setting()
+            ->value(sessionId + "/icon", (QVariant) parent->iconsPath("/128x128/x2gosession.png"))
+            .toString()
+            .trimmed());
 
-
-    sessIcon = expandHome (sessIcon);
-    if(sessIcon == ":/img/icons/128x128/x2gosession.png")
-    {
-        sessIcon=parent->iconsPath("/128x128/x2gosession.png");
+    sessIcon = expandHome(sessIcon);
+    if (sessIcon == ":/img/icons/128x128/x2gosession.png") {
+        sessIcon = parent->iconsPath("/128x128/x2gosession.png");
     }
 
-    icon->setIcon ( QIcon ( sessIcon ) );
+    icon->setIcon(QIcon(sessIcon));
 
-    server->setText ( st.setting()->value (
-                          sessionId+"/host",
-                          ( QVariant ) QString::null ).toString().trimmed() );
-    uname->setText ( st.setting()->value (
-                         sessionId+"/user",
-                         ( QVariant ) QString::null ).toString().trimmed() );
-    key->setText ( st.setting()->value (
-                       sessionId+"/key",
-                       ( QVariant ) QString::null ).toString().trimmed() );
-    cbAutoLogin->setChecked(st.setting()->value (
-                                sessionId+"/autologin",
-                                ( QVariant ) false ).toBool());
-    cbKrbLogin->setChecked(st.setting()->value (
-                               sessionId+"/krblogin",
-                               ( QVariant ) false ).toBool());
-    cbKrbDelegation->setChecked(st.setting()->value (
-                                    sessionId+"/krbdelegation",
-                                    ( QVariant ) false ).toBool());
-    sshPort->setValue (
-        st.setting()->value (
-            sessionId+"/sshport",
-            ( QVariant ) mainWindow->getDefaultSshPort().toInt()
-        ).toInt() );
+    server->setText(
+        st.setting()->value(sessionId + "/host", (QVariant) QString()).toString().trimmed());
+    uname->setText(
+        st.setting()->value(sessionId + "/user", (QVariant) QString()).toString().trimmed());
+    key->setText(st.setting()->value(sessionId + "/key", (QVariant) QString()).toString().trimmed());
+    cbAutoLogin->setChecked(
+        st.setting()->value(sessionId + "/autologin", (QVariant) false).toBool());
+    cbKrbLogin->setChecked(st.setting()->value(sessionId + "/krblogin", (QVariant) false).toBool());
+    cbKrbDelegation->setChecked(
+        st.setting()->value(sessionId + "/krbdelegation", (QVariant) false).toBool());
+    sshPort->setValue(
+        st.setting()
+            ->value(sessionId + "/sshport", (QVariant) mainWindow->getDefaultSshPort().toInt())
+            .toInt());
 #ifdef Q_OS_LINUX
-    rdpPort->setValue (
-        st.setting()->value (
-            sessionId+"/rdpport",3389
-        ).toInt() );
+    rdpPort->setValue(st.setting()->value(sessionId + "/rdpport", 3389).toInt());
 #endif
 
+    cbProxy->setChecked(st.setting()->value(sessionId + "/usesshproxy", false).toBool());
 
-    cbProxy->setChecked(st.setting()->value (
-                            sessionId+"/usesshproxy",
-                            false
-                        ).toBool() );
+    QString prtype = st.setting()->value(sessionId + "/sshproxytype", "SSH").toString().trimmed();
 
-    QString prtype= st.setting()->value (
-                        sessionId+"/sshproxytype",
-                        "SSH"
-                    ).toString().trimmed() ;
-
-    if(prtype=="HTTP")
-    {
+    if (prtype == "HTTP") {
         rbHttpProxy->setChecked(true);
-    }
-    else
-    {
+    } else {
         rbSshProxy->setChecked(true);
     }
 
-    proxyLogin->setText(st.setting()->value (
-                            sessionId+"/sshproxyuser",
-                            QString()
-                        ).toString().trimmed() );
+    proxyLogin->setText(
+        st.setting()->value(sessionId + "/sshproxyuser", QString()).toString().trimmed());
 
-    proxyKey->setText(st.setting()->value (
-                          sessionId+"/sshproxykeyfile",
-                          QString()
-                      ).toString().trimmed() );
+    proxyKey->setText(
+        st.setting()->value(sessionId + "/sshproxykeyfile", QString()).toString().trimmed());
 
-    proxyHost->setText(st.setting()->value (
-                           sessionId+"/sshproxyhost",
-                           QString()
-                       ).toString().trimmed() );
+    proxyHost->setText(
+        st.setting()->value(sessionId + "/sshproxyhost", QString()).toString().trimmed());
 
-    proxyPort->setValue(st.setting()->value (
-                            sessionId+"/sshproxyport",
-                            22
-                        ).toInt() );
+    proxyPort->setValue(st.setting()->value(sessionId + "/sshproxyport", 22).toInt());
 
-    cbProxySamePass->setChecked(st.setting()->value (
-                                    sessionId+"/sshproxysamepass",
-                                    false
-                                ).toBool() );
-    cbProxySameUser->setChecked(st.setting()->value (
-                                    sessionId+"/sshproxysameuser",
-                                    false
-                                ).toBool() );
-    cbProxyAutologin->setChecked(st.setting()->value (
-                                     sessionId+"/sshproxyautologin",
-                                     false
-                                 ).toBool() );
-    cbProxyKrbLogin->setChecked(st.setting()->value (
-                                    sessionId+"/sshproxykrblogin",
-                                    false
-                                ).toBool() );
+    cbProxySamePass->setChecked(
+        st.setting()->value(sessionId + "/sshproxysamepass", false).toBool());
+    cbProxySameUser->setChecked(
+        st.setting()->value(sessionId + "/sshproxysameuser", false).toBool());
+    cbProxyAutologin->setChecked(
+        st.setting()->value(sessionId + "/sshproxyautologin", false).toBool());
+    cbProxyKrbLogin->setChecked(
+        st.setting()->value(sessionId + "/sshproxykrblogin", false).toBool());
 
+    QTimer::singleShot(1, this, SLOT(slot_proxySameLogin()));
+    QTimer::singleShot(2, this, SLOT(slot_proxyType()));
+    QTimer::singleShot(3, this, SLOT(slot_proxyOptions()));
 
-    QTimer::singleShot(1, this,SLOT(slot_proxySameLogin()));
-    QTimer::singleShot(2, this,SLOT(slot_proxyType()));
-    QTimer::singleShot(3, this,SLOT(slot_proxyOptions()));
+    QStringList appNames = st.setting()->value(sessionId + "/applications").toStringList();
+    bool rootless = st.setting()->value(sessionId + "/rootless", false).toBool();
+    bool published = st.setting()->value(sessionId + "/published", false).toBool();
 
+    QString command = st.setting()
+                          ->value(sessionId + "/command", (QVariant) mainWindow->getDefaultCmd())
+                          .toString()
+                          .trimmed();
 
-    QStringList appNames=st.setting()->value (
-                             sessionId+"/applications" ).toStringList();
-    bool rootless=st.setting()->value (
-                      sessionId+"/rootless",false ).toBool();
-    bool published=st.setting()->value (
-                       sessionId+"/published",false ).toBool();
-
-    QString
-    command=st.setting()->value (
-                sessionId+"/command",
-                ( QVariant ) mainWindow->getDefaultCmd() ).toString().trimmed();
-
-    rdpOptions=st.setting()->value ( sessionId+"/rdpoptions",
-                                     ( QVariant ) "" ).toString().trimmed();
-    rdpServer=st.setting()->value ( sessionId+"/rdpserver",
-                                    ( QVariant ) "" ).toString().trimmed();
-    xdmcpServer=st.setting()->value ( sessionId+"/xdmcpserver",
-                                      ( QVariant ) "localhost" ).toString().trimmed();
+    rdpOptions = st.setting()->value(sessionId + "/rdpoptions", (QVariant) "").toString().trimmed();
+    rdpServer = st.setting()->value(sessionId + "/rdpserver", (QVariant) "").toString().trimmed();
+    xdmcpServer = st.setting()
+                      ->value(sessionId + "/xdmcpserver", (QVariant) "localhost")
+                      .toString()
+                      .trimmed();
 #ifdef Q_OS_LINUX
-    if(st.setting()->value (sessionId+"/directrdp",false ).toBool())
-    {
+    if (st.setting()->value(sessionId + "/directrdp", false).toBool()) {
         cbDirectRDP->setChecked(true);
     }
-    if(st.setting()->value (sessionId+"/directxdmcp",false ).toBool())
-    {
+    if (st.setting()->value(sessionId + "/directxdmcp", false).toBool()) {
         cbDirectRDP->setChecked(true);
     }
 #endif
 
-    for ( int i=0; i<appNames.count(); ++i )
-    {
-        QString app=mainWindow->transAppName ( appNames[i] );
-        if ( cmdCombo->findText ( app ) ==-1 )
-            cmdCombo->addItem ( app );
+    for (int i = 0; i < appNames.count(); ++i) {
+        QString app = mainWindow->transAppName(appNames[i]);
+        if (cmdCombo->findText(app) == -1)
+            cmdCombo->addItem(app);
     }
-    if ( published )
-    {
-        sessBox->setCurrentIndex( PUBLISHED );
+    if (published) {
+        sessBox->setCurrentIndex(PUBLISHED);
         cmdCombo->setDisabled(true);
         slot_changeCmd(PUBLISHED);
-    }
-    else if ( rootless )
-    {
-        sessBox->setCurrentIndex ( APPLICATION );
-        QString app=mainWindow->transAppName ( command );
-        cmdCombo->lineEdit()->setText ( app );
-        slot_changeCmd ( APPLICATION );
-    }
-    else
-    {
-        if ( command=="KDE" )
-        {
-            sessBox->setCurrentIndex ( KDE );
-            cmd->setEnabled ( false );
-        }
-        else if ( command=="GNOME" )
-        {
-            sessBox->setCurrentIndex ( GNOME );
-            cmd->setEnabled ( false );
-        }
-        else if ( command=="LXDE" )
-        {
-            sessBox->setCurrentIndex ( LXDE );
-            cmd->setEnabled ( false );
-        }
-        else if (command == "LXQt")
-        {
-            sessBox->setCurrentIndex (LXQt);
-            cmd->setEnabled (false);
-        }
-        else if ( command=="UNITY" )
-        {
-            sessBox->setCurrentIndex ( UNITY );
-            cmd->setEnabled ( false );
-        }
-        else if ( command=="XFCE" )
-        {
-            sessBox->setCurrentIndex ( XFCE );
-            cmd->setEnabled ( false );
-        }
-        else if ( command=="SHADOW" )
-        {
-            sessBox->setCurrentIndex ( SHADOW );
-            cmd->setEnabled ( false );
-        }
-        else if ( command=="RDP" )
-        {
-            leCmdIp->setText ( tr ( "Server:" ) );
-            sessBox->setCurrentIndex ( RDP );
-            cmd->setEnabled ( true );
-            cmd->setText ( rdpServer );
+    } else if (rootless) {
+        sessBox->setCurrentIndex(APPLICATION);
+        QString app = mainWindow->transAppName(command);
+        cmdCombo->lineEdit()->setText(app);
+        slot_changeCmd(APPLICATION);
+    } else {
+        if (command == "KDE") {
+            sessBox->setCurrentIndex(KDE);
+            cmd->setEnabled(false);
+        } else if (command == "GNOME") {
+            sessBox->setCurrentIndex(GNOME);
+            cmd->setEnabled(false);
+        } else if (command == "LXDE") {
+            sessBox->setCurrentIndex(LXDE);
+            cmd->setEnabled(false);
+        } else if (command == "LXQt") {
+            sessBox->setCurrentIndex(LXQt);
+            cmd->setEnabled(false);
+        } else if (command == "UNITY") {
+            sessBox->setCurrentIndex(UNITY);
+            cmd->setEnabled(false);
+        } else if (command == "XFCE") {
+            sessBox->setCurrentIndex(XFCE);
+            cmd->setEnabled(false);
+        } else if (command == "SHADOW") {
+            sessBox->setCurrentIndex(SHADOW);
+            cmd->setEnabled(false);
+        } else if (command == "RDP") {
+            leCmdIp->setText(tr("Server:"));
+            sessBox->setCurrentIndex(RDP);
+            cmd->setEnabled(true);
+            cmd->setText(rdpServer);
             pbAdvanced->show();
 #ifdef Q_OS_LINUX
             cbDirectRDP->show();
             slot_rdpDirectClicked();
 #endif
-        }
-        else if ( command=="XDMCP" )
-        {
-            leCmdIp->setText ( tr ( "XDMCP server:" ) );
-            sessBox->setCurrentIndex ( XDMCP );
-            cmd->setEnabled ( true );
-            cmd->setText ( xdmcpServer );
+        } else if (command == "XDMCP") {
+            leCmdIp->setText(tr("XDMCP server:"));
+            sessBox->setCurrentIndex(XDMCP);
+            cmd->setEnabled(true);
+            cmd->setText(xdmcpServer);
 #ifdef Q_OS_LINUX
             cbDirectRDP->show();
             slot_rdpDirectClicked();
 #endif
-        }
-        else
-        {
-            cmd->setText ( command );
-            sessBox->setCurrentIndex ( OTHER );
-            cmd->setEnabled ( true );
+        } else {
+            cmd->setText(command);
+            sessBox->setCurrentIndex(OTHER);
+            cmd->setEnabled(true);
         }
     }
-    if ( sessName->text() ==tr ( "New session" ) )
-    {
+    if (sessName->text() == tr("New session")) {
         sessName->selectAll();
         sessName->setFocus();
     }
 
-    cbKdrive->setChecked(st.setting()->value (sessionId+"/kdrive", false).toBool() );
+    cbKdrive->setChecked(st.setting()->value(sessionId + "/kdrive", false).toBool());
 
 #ifdef Q_OS_LINUX
     slot_rdpDirectClicked();
@@ -812,37 +694,32 @@ void SessionWidget::readConfig()
 
 void SessionWidget::setDefaults()
 {
-    cmd->setText ( "" );
-    sessBox->setCurrentIndex ( KDE );
+    cmd->setText("");
+    sessBox->setCurrentIndex(KDE);
     cmdCombo->clear();
-    cmdCombo->addItem ( "" );
+    cmdCombo->addItem("");
     cbKdrive->setChecked(false);
-    cmdCombo->addItems ( mainWindow->transApplicationsNames() );
+    cmdCombo->addItems(mainWindow->transApplicationsNames());
     cbAutoLogin->setChecked(false);
     cbKrbLogin->setChecked(false);
-    cmdCombo->lineEdit()->setText (
+    cmdCombo->lineEdit()->setText(
 
-        tr ( "Path to executable" ) );
+        tr("Path to executable"));
     cmdCombo->lineEdit()->selectAll();
-    slot_changeCmd ( 0 );
-    cmd->setEnabled ( false );
-    sessIcon=parent->iconsPath("/128x128/x2gosession.png");
-    icon->setIcon ( QIcon ( sessIcon ) );
-    sshPort->setValue (
-        mainWindow->getDefaultSshPort().toInt() );
+    slot_changeCmd(0);
+    cmd->setEnabled(false);
+    sessIcon = parent->iconsPath("/128x128/x2gosession.png");
+    icon->setIcon(QIcon(sessIcon));
+    sshPort->setValue(mainWindow->getDefaultSshPort().toInt());
 #ifdef Q_OS_LINUX
-    rdpPort->setValue (3389);
+    rdpPort->setValue(3389);
 #endif
-
-
 
     cbProxy->setChecked(false);
 
     rbSshProxy->setChecked(true);
 
-
-    proxyKey->setText(QString::null);
-
+    proxyKey->setText(QString());
 
     proxyPort->setValue(22);
 
@@ -851,127 +728,98 @@ void SessionWidget::setDefaults()
     cbProxyAutologin->setChecked(false);
     cbProxyKrbLogin->setChecked(false);
 
-    QTimer::singleShot(1, this,SLOT(slot_proxySameLogin()));
-    QTimer::singleShot(2, this,SLOT(slot_proxyType()));
-    QTimer::singleShot(3, this,SLOT(slot_proxyOptions()));
-
+    QTimer::singleShot(1, this, SLOT(slot_proxySameLogin()));
+    QTimer::singleShot(2, this, SLOT(slot_proxyType()));
+    QTimer::singleShot(3, this, SLOT(slot_proxyOptions()));
 }
-
 
 void SessionWidget::saveSettings()
 {
+    X2goSettings st("sessions");
 
-    X2goSettings st ( "sessions" );
+    QString normPath
+        = (lPath->text() + "/" + sessName->text()).split("/", Qt::SkipEmptyParts).join("/");
 
-    QString normPath=(lPath->text()+"/"+sessName->text()).split("/",QString::SkipEmptyParts).join("/");
+    st.setting()->setValue(sessionId + "/name", (QVariant) normPath.trimmed());
+    st.setting()->setValue(sessionId + "/icon", (QVariant) sessIcon);
+    st.setting()->setValue(sessionId + "/host", (QVariant) server->text().trimmed());
+    st.setting()->setValue(sessionId + "/user", (QVariant) uname->text().trimmed());
 
-    st.setting()->setValue ( sessionId+"/name",
-                             ( QVariant ) normPath.trimmed() );
-    st.setting()->setValue ( sessionId+"/icon",
-                             ( QVariant ) sessIcon );
-    st.setting()->setValue ( sessionId+"/host",
-                             ( QVariant ) server->text().trimmed() );
-    st.setting()->setValue ( sessionId+"/user",
-                             ( QVariant ) uname->text().trimmed() );
-
-    st.setting()->setValue ( sessionId+"/key",
-                             ( QVariant ) key->text().trimmed() );
+    st.setting()->setValue(sessionId + "/key", (QVariant) key->text().trimmed());
 #ifdef Q_OS_LINUX
-    st.setting()->setValue ( sessionId+"/rdpport",
-                             ( QVariant ) rdpPort->value() );
+    st.setting()->setValue(sessionId + "/rdpport", (QVariant) rdpPort->value());
 #endif
-    st.setting()->setValue ( sessionId+"/sshport",
-                             ( QVariant ) sshPort->value() );
-    st.setting()->setValue(sessionId+"/autologin",( QVariant ) cbAutoLogin->isChecked());
-    st.setting()->setValue(sessionId+"/krblogin",( QVariant ) cbKrbLogin->isChecked());
-    st.setting()->setValue(sessionId+"/krbdelegation",( QVariant ) cbKrbDelegation->isChecked());
+    st.setting()->setValue(sessionId + "/sshport", (QVariant) sshPort->value());
+    st.setting()->setValue(sessionId + "/autologin", (QVariant) cbAutoLogin->isChecked());
+    st.setting()->setValue(sessionId + "/krblogin", (QVariant) cbKrbLogin->isChecked());
+    st.setting()->setValue(sessionId + "/krbdelegation", (QVariant) cbKrbDelegation->isChecked());
 #ifdef Q_OS_LINUX
-    st.setting()->setValue(sessionId+"/directrdp",( QVariant ) cbDirectRDP->isChecked());
-    st.setting()->setValue(sessionId+"/directxdmcp",( QVariant ) cbDirectRDP->isChecked());
+    st.setting()->setValue(sessionId + "/directrdp", (QVariant) cbDirectRDP->isChecked());
+    st.setting()->setValue(sessionId + "/directxdmcp", (QVariant) cbDirectRDP->isChecked());
 #endif
 
-    st.setting()->setValue(sessionId+"/kdrive",( QVariant ) cbKdrive->isChecked());
+    st.setting()->setValue(sessionId + "/kdrive", (QVariant) cbKdrive->isChecked());
     QString command;
-    bool rootless=false;
-    bool published=false;
+    bool rootless = false;
+    bool published = false;
 
-
-    if ( sessBox->currentIndex() < OTHER )
-        command=sessBox->currentText();
+    if (sessBox->currentIndex() < OTHER)
+        command = sessBox->currentText();
     else
-        command=cmd->text().trimmed();
-    if ( sessBox->currentIndex() == RDP )
-    {
-        command="RDP";
-        rdpServer=cmd->text().trimmed();
+        command = cmd->text().trimmed();
+    if (sessBox->currentIndex() == RDP) {
+        command = "RDP";
+        rdpServer = cmd->text().trimmed();
     }
-    if ( sessBox->currentIndex() == XDMCP )
-    {
-        command="XDMCP";
-        xdmcpServer=cmd->text().trimmed();
+    if (sessBox->currentIndex() == XDMCP) {
+        command = "XDMCP";
+        xdmcpServer = cmd->text().trimmed();
     }
-    if ( sessBox->currentIndex() == SHADOW )
-    {
-        command="SHADOW";
+    if (sessBox->currentIndex() == SHADOW) {
+        command = "SHADOW";
     }
 
     QStringList appList;
-    for ( int i=-1; i<cmdCombo->count(); ++i )
-    {
+    for (int i = -1; i < cmdCombo->count(); ++i) {
         QString app;
-        if ( i==-1 )
-            app=mainWindow->internAppName (
-                    cmdCombo->lineEdit()->text () );
+        if (i == -1)
+            app = mainWindow->internAppName(cmdCombo->lineEdit()->text());
         else
-            app=mainWindow->internAppName ( cmdCombo->itemText ( i ) );
-        if ( appList.indexOf ( app ) ==-1 && app!="" &&
-                app!=tr ( "Path to executable" ) )
-        {
-            appList.append ( app );
+            app = mainWindow->internAppName(cmdCombo->itemText(i));
+        if (appList.indexOf(app) == -1 && app != "" && app != tr("Path to executable")) {
+            appList.append(app);
         }
     }
-    if ( sessBox->currentIndex() ==APPLICATION )
-    {
-        rootless=true;
-        command=mainWindow->internAppName ( cmdCombo->lineEdit()->text().trimmed() );
+    if (sessBox->currentIndex() == APPLICATION) {
+        rootless = true;
+        command = mainWindow->internAppName(cmdCombo->lineEdit()->text().trimmed());
     }
-    if ( sessBox->currentIndex() == PUBLISHED)
-        published=true;
+    if (sessBox->currentIndex() == PUBLISHED)
+        published = true;
 
-    st.setting()->setValue ( sessionId+"/rootless", ( QVariant ) rootless );
-    st.setting()->setValue ( sessionId+"/published", ( QVariant ) published );
-    st.setting()->setValue ( sessionId+"/applications",
-                             ( QVariant ) appList );
-    st.setting()->setValue ( sessionId+"/command",
-                             ( QVariant ) command );
-    st.setting()->setValue ( sessionId+"/rdpoptions",
-                             ( QVariant ) rdpOptions );
-    st.setting()->setValue ( sessionId+"/rdpserver",
-                             ( QVariant ) rdpServer );
-    st.setting()->setValue ( sessionId+"/xdmcpserver",
-                             ( QVariant ) xdmcpServer );
+    st.setting()->setValue(sessionId + "/rootless", (QVariant) rootless);
+    st.setting()->setValue(sessionId + "/published", (QVariant) published);
+    st.setting()->setValue(sessionId + "/applications", (QVariant) appList);
+    st.setting()->setValue(sessionId + "/command", (QVariant) command);
+    st.setting()->setValue(sessionId + "/rdpoptions", (QVariant) rdpOptions);
+    st.setting()->setValue(sessionId + "/rdpserver", (QVariant) rdpServer);
+    st.setting()->setValue(sessionId + "/xdmcpserver", (QVariant) xdmcpServer);
 
+    st.setting()->setValue(sessionId + "/usesshproxy", cbProxy->isChecked());
 
-    st.setting()->setValue (
-        sessionId+"/usesshproxy",cbProxy->isChecked());
-
-
-    if(rbHttpProxy->isChecked())
-    {
-        st.setting()->setValue ( sessionId+"/sshproxytype","HTTP");
+    if (rbHttpProxy->isChecked()) {
+        st.setting()->setValue(sessionId + "/sshproxytype", "HTTP");
+    } else {
+        st.setting()->setValue(sessionId + "/sshproxytype", "SSH");
     }
-    else
-    {
-        st.setting()->setValue ( sessionId+"/sshproxytype","SSH");
-    }
-    st.setting()->setValue (sessionId+"/sshproxyuser",proxyLogin->text().trimmed());
-    st.setting()->setValue (sessionId+"/sshproxykeyfile",proxyKey->text().trimmed());
-    st.setting()->setValue (sessionId+"/sshproxyhost",proxyHost->text().trimmed());
-    st.setting()->setValue (sessionId+"/sshproxyport",proxyPort->value());
-    st.setting()->setValue (sessionId+"/sshproxysamepass",cbProxySamePass->isChecked());
-    st.setting()->setValue (sessionId+"/sshproxysameuser",cbProxySameUser->isChecked());
-    st.setting()->setValue (sessionId+"/sshproxyautologin",cbProxyAutologin->isChecked());
-    st.setting()->setValue (sessionId+"/sshproxykrblogin",cbProxyKrbLogin->isChecked());
+    st.setting()->setValue(sessionId + "/sshproxyuser", proxyLogin->text().trimmed());
+    st.setting()->setValue(sessionId + "/sshproxykeyfile", proxyKey->text().trimmed());
+    st.setting()->setValue(sessionId + "/sshproxyhost", proxyHost->text().trimmed());
+    st.setting()->setValue(sessionId + "/sshproxyport", proxyPort->value());
+    st.setting()->setValue(sessionId + "/sshproxysamepass", cbProxySamePass->isChecked());
+    st.setting()->setValue(sessionId + "/sshproxysameuser", cbProxySameUser->isChecked());
+    st.setting()->setValue(sessionId + "/sshproxyautologin", cbProxyAutologin->isChecked());
+    st.setting()->setValue(sessionId + "/sshproxykrblogin", cbProxyKrbLogin->isChecked());
 
     st.setting()->sync();
 }
@@ -984,7 +832,7 @@ QString SessionWidget::sessionName()
 #ifdef Q_OS_LINUX
 void SessionWidget::slot_emitSettings()
 {
-    emit settingsChanged(server->text(), QString::number( rdpPort->value()), uname->text());
+    emit settingsChanged(server->text(), QString::number(rdpPort->value()), uname->text());
 }
 #endif
 
@@ -996,8 +844,7 @@ void SessionWidget::slot_krbChecked()
 void SessionWidget::slot_openFolder()
 {
     FolderExplorer explorer(lPath->text(), parent->getSessionExplorer(), parent);
-    if(explorer.exec()==QDialog::Accepted)
-    {
+    if (explorer.exec() == QDialog::Accepted) {
         lPath->setText(explorer.getCurrentPath());
     }
 }

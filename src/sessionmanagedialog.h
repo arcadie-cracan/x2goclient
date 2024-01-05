@@ -33,13 +33,15 @@ class SessionManageDialog : public QDialog
 {
     Q_OBJECT
 public:
-    SessionManageDialog ( QWidget * parent,
-                          bool onlyCreateIcon=false,
-                          Qt::WindowFlags f=0 );
+    SessionManageDialog(QWidget* parent,
+                        bool onlyCreateIcon = false,
+                        Qt::WindowFlags f = Qt::WindowFlags());
     ~SessionManageDialog();
     void loadSessions();
+
 private:
     void initFolders(QTreeWidgetItem* parent, QString path);
+
 private:
     QTreeWidget* sessions;
     QPushButton* editSession;
@@ -48,13 +50,13 @@ private:
     ONMainWindow* par;
     QString currentPath;
 private slots:
-    void slot_endisable (QTreeWidgetItem *item, int col = -1);
-    void slot_endisable_ItemChanged_wrapper (QTreeWidgetItem *item, QTreeWidgetItem *);
+    void slot_endisable(QTreeWidgetItem* item, int col = -1);
+    void slot_endisable_ItemChanged_wrapper(QTreeWidgetItem* item, QTreeWidgetItem*);
     void slotNew();
     void slot_edit();
     void slot_createSessionIcon();
     void slot_delete();
-    void slot_dclicked ( QTreeWidgetItem * item, int );
+    void slot_dclicked(QTreeWidgetItem* item, int);
 };
 
 #endif
