@@ -297,7 +297,7 @@ public:
     void setStatStatus(QString status = QString());
     x2goSession getNewSessionFromString(const QString &string);
     void runCommand();
-    long findWindow(QString text);
+    void *findWindow(QString text);
     bool retUseLdap() { return useLdap; }
     bool retMiniMode() { return miniMode; }
     QString retLdapServer() { return ldapServer; }
@@ -554,7 +554,7 @@ private:
     QStyle *widgetExtraStyle;
     bool isPassShown;
     bool xmodExecuted;
-    long proxyWinId;
+    void *proxyWinId;
     bool embedControlChanged;
     bool embedTbVisible;
     QLabel *statusLabel;

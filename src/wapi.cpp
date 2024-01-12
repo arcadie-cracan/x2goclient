@@ -31,6 +31,7 @@
 #include <windows.h>
 #include <winerror.h>
 #include <winuser.h>
+#include <Shlwapi.h>
 
 long wapiSetFSWindow(HWND hWnd, const QRect &desktopGeometry)
 {
@@ -186,14 +187,49 @@ bool wapiMoveWindow(HWND wnd, int x, int y, int width, int height, bool repaint)
     return MoveWindow(wnd, x, y, width, height, repaint);
 }
 
-HWND wapiFindWindow(const ushort *className, const ushort *text)
+HWND wapiFindWindow(const QString &text)
 {
-    return FindWindowEx(0, 0, (LPCTSTR) className, (LPCTSTR) text);
+    struct enumInfo
+    {
+        const char *title;
+        HWND hwnd;
+    };
+
+    enumInfo info;
+    QByteArray ba = text.toLatin1();
+    info.title = ba.constData();
+    info.hwnd = NULL;
+
+    EnumWindows(
+        [](HWND hwnd, LPARAM lParam) {
+            enumInfo *info = reinterpret_cast<enumInfo *>(lParam);
+
+            int textLen = GetWindowTextLengthA(hwnd);
+
+            LPSTR title = (PSTR)
+                VirtualAlloc((LPVOID) NULL, (DWORD) (textLen + 1), MEM_COMMIT, PAGE_READWRITE);
+            GetWindowTextA(hwnd, title, textLen + 1);
+            bool match = false;
+            if (StrStrA(title, info->title) != NULL) {
+                match = true;
+            }
+            VirtualFree(title, 0, MEM_RELEASE);
+            if (match) {
+                info->hwnd = hwnd;
+                return FALSE;
+            }
+            return TRUE;
+        },
+        reinterpret_cast<LPARAM>(&info)
+        );
+
+    return info.hwnd;
+    // return FindWindowExA(0, 0, 0, (LPCTSTR) text.toLatin1());
 }
 
 bool wapiSetWindowText(HWND wnd, const QString &text)
 {
-    return SetWindowText(wnd, (LPCTSTR) text.utf16());
+    return SetWindowTextA(wnd, (LPCTSTR) text.toLatin1());
 }
 
 void wapiSetWindowIcon(HWND wnd, const QPixmap &icon)
@@ -213,10 +249,10 @@ void wapiSetWindowIcon(HWND wnd, const QPixmap &icon)
 
     x2goDebug << "Large icon: " << largeIcon << iconx << "x" << icony;
     x2goDebug << "Small icon: " << smallIcon << smallx << "x" << smally;
-    int rez = SetClassLong(wnd, GCLP_HICON, (LONG) largeIcon);
+    int rez = SetClassLongPtr(wnd, GCLP_HICON, (LONG_PTR) largeIcon);
     if (!rez)
         x2goDebug << "ERROR: " << GetLastError() << Qt::endl;
-    rez = SetClassLong(wnd, GCLP_HICONSM, (LONG) smallIcon);
+    rez = SetClassLongPtr(wnd, GCLP_HICONSM, (LONG_PTR) smallIcon);
     if (!rez)
         x2goDebug << "ERROR: " << GetLastError() << Qt::endl;
     /*    ShowWindow(wnd, SW_HIDE);

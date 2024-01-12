@@ -108,7 +108,7 @@ ONMainWindow::ONMainWindow(QWidget* parent)
     miniMode = false;
     embedMode = false;
     proxyWinEmbedded = false;
-    proxyWinId = 0;
+    proxyWinId = nullptr;
     embedParent = embedChild = 0l;
     defaultSession = false;
     connTest = false;
@@ -772,8 +772,9 @@ void ONMainWindow::initWidgetsNormal()
     uframe = new QFrame();
     users->setWidget(uframe);
 
-    mainL->insertWidget(1, ln);
-    //     mainL->addWidget ( users );
+    // mainL->insertWidget(1, ln);
+    mainL->addWidget(ln);
+    // mainL->addWidget(users);
     mainL->addLayout(vblay);
 
     QAction* act_exit = new QAction(QIcon(iconsPath("/32x32/exit.png")), tr("&Quit"), this);
@@ -5687,7 +5688,7 @@ void ONMainWindow::slotProxyFinished(int, QProcess::ExitStatus)
     tunnel = sndTunnel = fsTunnel = 0l;
     soundServer = 0l;
     nxproxy = 0l;
-    proxyWinId = 0;
+    proxyWinId = nullptr;
 
 #ifdef Q_OS_LINUX
     if (directRDP) {
@@ -9032,7 +9033,7 @@ void ONMainWindow::startXOrg(int start_offset)
                               QString(),
                               tr("Can't start X.Org Server.") + "\n"
                                   + tr("Please check your installation."));
-        close();
+        // close();
     }
     // #ifdef CFGCLIENT
     if (!useInternalX || internalX != XMING) {
@@ -9055,18 +9056,20 @@ void ONMainWindow::slotCheckXOrgConnection()
          * Process died (crashed, terminated, whatever). We need to restart it, unless we already tried
          * to do so multiple times unsuccessfully.
          */
-        if ((x_start_limit_) && (x_start_limit_ < x_start_tries_)) {
+        if ((x_start_limit_) && (x_start_tries_ >= x_start_limit_)) {
             x2goDebug << "Unable to start X.Org Server for " << x_start_limit_
-                      << " times, terminating.";
+                      << " times.";
 
             QMessageBox::critical(NULL,
                                   QString(),
                                   tr("X.Org Server did not launch correctly after %n tries.",
                                      "%n will be substituted with the current number of tries",
                                      x_start_tries_)
-                                      + "\n" + tr("Please check your installation."));
+                                      + "\n" + tr("Please check your settings and installation, currently using %1 X-server at location: \"%2\"")
+                                                   .arg(useInternalX ? tr("internal") : tr("custom"))
+                                                   .arg(xorg->program()));
 
-            close();
+            //close();
 
             return;
         }
@@ -9242,7 +9245,7 @@ void ONMainWindow::xorgSettings()
 
     useInternalX = (st.setting()->value("useintx", true).toBool());
 
-    xorgExe = (st.setting()->value("xexec", "C:\\program files\\vcxsrv\\vcxsrv.exe").toString());
+    xorgExe = (st.setting()->value("xexec", "C:\\Program Files\\VcXsrv\\vcxsrv.exe").toString());
     xorgOptions = (st.setting()->value("options", "-multiwindow -notrayicon -clipboard").toString());
     startXorgOnStart = (st.setting()->value("onstart", true).toBool());
     xorgWinOptions
@@ -9778,8 +9781,7 @@ bool ONMainWindow::startSshd(ONMainWindow::key_types key_type)
                                     NULL,                       // Process handle not inheritable
                                     NULL,                       // Thread handle not inheritable
                                     TRUE,                       // Set handle inheritance to FALSE
-                                    0 /*CREATE_NO_WINDOW|CREATE_NEW_PROCESS_GROUP*/,
-                                    //creation flags
+                                    CREATE_NO_WINDOW /*CREATE_NO_WINDOW|CREATE_NEW_PROCESS_GROUP*/, //creation flags
                                     NULL,              // Use parent's environment block
                                     clientdir.c_str(), // Starting directory
                                     &si,               // Pointer to STARTUPINFO structure
@@ -9868,9 +9870,11 @@ void ONMainWindow::setProxyWinTitle()
             return;
         }
 
-        title = sessionExplorer->getLastSession()->name();
-    } else
+        title = getCurrentUname() + "@" + sessionExplorer->getLastSession()->name();
+    }
+    else {
         title = getCurrentUname() + "@" + resumingSession.server;
+    }
 
     QPixmap pixmap;
 
@@ -10109,7 +10113,7 @@ void ONMainWindow::slotFindProxyWin()
     proxyWinId = findWindow("X2GO-" + resumingSession.sessionId);
     bool xinerama = defaultXinerama;
     if (proxyWinId) {
-        x2goDebug << "Proxy window found: " + QString("%1").arg(proxyWinId);
+        x2goDebug << "Proxy window found: " + QString("%1").arg((long long)proxyWinId);
 
         setProxyWinTitle();
         proxyWinTimer->stop();
@@ -11543,16 +11547,16 @@ long ONMainWindow::X11FindWindow(QString text, long rootWin)
 }
 #endif
 
-long ONMainWindow::findWindow(QString text)
+void* ONMainWindow::findWindow(QString text)
 {
     x2goDebug << "Searching window with title: " + text;
 #ifdef Q_OS_LINUX
     return X11FindWindow(text);
 #endif
 #ifdef Q_OS_WIN
-    return (long) wapiFindWindow(0, text.utf16());
+    return (void *) wapiFindWindow(text);
 #endif
-    return 0;
+    return nullptr;
 }
 
 void ONMainWindow::slotInitLibssh()

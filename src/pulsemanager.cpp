@@ -17,11 +17,12 @@
  *  59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.              *
  ***************************************************************************/
 
-#include <QSysInfo>
-#include <cerrno>
 #include <stdlib.h>
 
 #include <qglobal.h>
+
+#include <QOperatingSystemVersion>
+#include <QSysInfo>
 
 #ifdef Q_OS_UNIX
 #include <unistd.h>
@@ -33,7 +34,6 @@
 
 #include "pulsemanager.h"
 #include "x2gologdebug.h"
-#include "x2goutils.h"
 
 PulseManager::PulseManager()
     : app_dir_(QApplication::applicationDirPath())
@@ -350,8 +350,8 @@ void PulseManager::start_win()
    * So yes, the fact that 1.1 ignores it would be a bug in x2goclient if we
    * ever ship 1.1 again.
    */
-    if ((QSysInfo::WindowsVersion == QSysInfo::WV_XP)
-        || (QSysInfo::WindowsVersion == QSysInfo::WV_2003)) {
+
+    if (QOperatingSystemVersion::current() < QOperatingSystemVersion::Windows7) {
         x2goDebug << "Windows XP or Server 2003 (R2) detected."
                   << "Setting PulseAudio to \"normal\" CPU priority.";
 
@@ -828,12 +828,15 @@ void PulseManager::slot_on_pulse_finished(int exit_code)
     shutdown_state_ = false;
     x2goDebug << "Pulseaudio finished with code:" << exit_code;
     QByteArray ba(pulse_server_->readAllStandardOutput());
-    const char *data = ba.constData();
-    x2goDebug << data;
+    if (ba.size()) {
+        const char *data = ba.constData();
+        x2goDebug << data;
+    }
     ba = pulse_server_->readAllStandardError();
-    data = ba.constData();
-    x2goDebug << data;
-
+    if (ba.size()) {
+        const char *data = ba.constData();
+        x2goDebug << data;
+    }
     // Clean up
     QDir work_dir(app_dir_);
 

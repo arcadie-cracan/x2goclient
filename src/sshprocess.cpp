@@ -27,9 +27,6 @@
 #include <netinet/tcp.h>
 #endif
 
-// #undef DEBUG
-#define DEBUG
-
 #define KEEPALIVE_OPTION " -o ServerAliveInterval=60 "
 
 SshProcess::SshProcess(SshMasterConnection *master, int pid)
@@ -569,7 +566,7 @@ void SshProcess::slotChannelClosed(SshProcess *creator, QString uuid)
         }
     }
 #ifdef DEBUG
-    x2goDebug << "SSH finished: " << normalExited << " - " << output << " (" << pid << ").";
+    x2goDebug << "SSH command " << command.left(15) << " finished with status: " << normalExited << " - " << output << " (" << pid << ").";
 #endif
     emit sshFinished(normalExited, output, pid);
 }
